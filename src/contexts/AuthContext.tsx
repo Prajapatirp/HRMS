@@ -41,6 +41,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!loading && !user && !token) {
+      // Only redirect if we're not already on the home page
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        router.push('/');
+      }
+    }
+  }, [user, token, loading, router]);
+
   const fetchUserProfile = async (authToken: string) => {
     try {
       const response = await fetch('/api/auth/me', {
@@ -107,9 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // if (logoutLoading) return; // Prevent multiple logout calls
+    if (logoutLoading) return; // Prevent multiple logout calls
     
-    // setLogoutLoading(true);
+    setLogoutLoading(true);
     
     try {
       // Call logout API if we have a token
@@ -122,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
           });
         } catch (apiError) {
-          // Even if API call fails, continue with client-side logout
           console.warn('Logout API call failed, continuing with client-side logout:', apiError);
         }
       }
@@ -131,27 +140,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setToken(null);
       localStorage.removeItem('token');
-      
-      // Clear any other stored data if needed
       localStorage.removeItem('user');
       
       console.log('Logged out successfully');
       
-      // Redirect to home page
+      // Redirect to login page
       router.push('/');
       
-      // Force a small delay to ensure state is cleared
+      // Force redirect as fallback
       setTimeout(() => {
-        window.location.reload();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
       }, 100);
+      
     } catch (error) {
       console.error('Logout error:', error);
-      // Fallback: force page reload
-      window.location.href = '/';
-    } 
-    // finally {
-      // setLogoutLoading(false);
-    // }
+      // Even if there's an error, clear the auth state and redirect
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      router.push('/');
+      
+      // Force redirect as fallback
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }, 100);
+    } finally {
+      setLogoutLoading(false);
+    }
   };
 
   return (
