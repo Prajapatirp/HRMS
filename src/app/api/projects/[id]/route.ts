@@ -91,7 +91,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<any> }
+  { params }: { params: Promise<{ id: any | string | null }> }
 ) {
   try {
     await connectDB();
@@ -106,7 +106,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = await params as any;
     const project = await Project.findById(id);
     if (!project) {
       return NextResponse.json(
@@ -117,7 +117,7 @@ export async function DELETE(
 
     // Check if project is being used in timesheets
     const Timesheet = require('@/models/Timesheet').default;
-    const timesheetCount = await Timesheet.countDocuments({ projectId: params.id });
+    const timesheetCount = await Timesheet.countDocuments({ projectId: id });
     
     if (timesheetCount > 0) {
       return NextResponse.json(
@@ -126,7 +126,7 @@ export async function DELETE(
       );
     }
 
-    await Project.findByIdAndDelete(params.id);
+    await Project.findByIdAndDelete(id);
 
     return NextResponse.json(
       { message: 'Project deleted successfully' }

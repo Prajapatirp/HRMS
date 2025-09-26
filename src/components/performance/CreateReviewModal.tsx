@@ -39,7 +39,7 @@ interface Competency {
 }
 
 export default function CreateReviewModal({ isOpen, onClose, onSuccess }: CreateReviewModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     employeeId: '',
     reviewPeriod: {
       startDate: '',
@@ -93,14 +93,14 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [field]: value
     }));
   };
 
   const handleNestedInputChange = (parentField: string, childField: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [parentField]: {
         ...prev[parentField as keyof typeof prev],
@@ -110,7 +110,7 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
   };
 
   const handleArrayInputChange = (field: string, index: number, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [field]: prev[field as keyof typeof prev].map((item: any, i: number) => 
         i === index ? { ...item, ...value } : item
@@ -119,58 +119,58 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
   };
 
   const addGoal = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       goals: [...prev.goals, { description: '', target: '', achieved: '', rating: 3 }]
     }));
   };
 
   const removeGoal = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      goals: prev.goals.filter((_, i) => i !== index)
+      goals: prev.goals.filter((_: any, i: any) => i !== index)
     }));
   };
 
   const addCompetency = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       competencies: [...prev.competencies, { skill: '', rating: 3, comments: '' }]
     }));
   };
 
   const removeCompetency = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      competencies: prev.competencies.filter((_, i) => i !== index)
+      competencies: prev.competencies.filter((_: any, i: any) => i !== index)
     }));
   };
 
   const addStrength = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       strengths: [...prev.strengths, '']
     }));
   };
 
   const removeStrength = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      strengths: prev.strengths.filter((_, i) => i !== index)
+      strengths: prev.strengths.filter((_: any, i: any) => i !== index)
     }));
   };
 
   const addImprovementArea = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       areasForImprovement: [...prev.areasForImprovement, '']
     }));
   };
 
   const removeImprovementArea = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      areasForImprovement: prev.areasForImprovement.filter((_, i) => i !== index)
+      areasForImprovement: prev.areasForImprovement.filter((_: any, i: any) => i !== index)
     }));
   };
 
@@ -183,8 +183,8 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
       // Clean up empty strings from arrays
       const cleanedData = {
         ...formData,
-        strengths: formData.strengths.filter(s => s.trim() !== ''),
-        areasForImprovement: formData.areasForImprovement.filter(a => a.trim() !== ''),
+        strengths: formData.strengths.filter((s: any) => s.trim() !== ''),
+        areasForImprovement: formData.areasForImprovement.filter((a: any) => a.trim() !== ''),
       };
 
       const response = await fetch('/api/performance', {
@@ -371,7 +371,7 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                   <span>Add Goal</span>
                 </Button>
               </div>
-              {formData.goals.map((goal, index) => (
+              {formData.goals.map((goal: any, index: any) => (
                 <div key={index} className="p-4 border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Goal {index + 1}</span>
@@ -437,7 +437,7 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                   <span>Add Competency</span>
                 </Button>
               </div>
-              {formData.competencies.map((competency, index) => (
+              {formData.competencies.map((competency: any, index: any) => (
                 <div key={index} className="p-4 border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Competency {index + 1}</span>
@@ -500,7 +500,7 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                   <span>Add Strength</span>
                 </Button>
               </div>
-              {formData.strengths.map((strength, index) => (
+              {formData.strengths.map((strength: any, index: any) => (
                 <div key={index} className="flex items-center space-x-2">
                   <Input
                     value={strength}
@@ -535,7 +535,7 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                   <span>Add Area</span>
                 </Button>
               </div>
-              {formData.areasForImprovement.map((area, index) => (
+              {formData.areasForImprovement.map((area: any, index: any) => (
                 <div key={index} className="flex items-center space-x-2">
                   <Input
                     value={area}

@@ -43,7 +43,7 @@ interface Employee {
 interface EmployeeDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  employee: Employee | null;
+  employee: Employee | null | any;
   onEdit: () => void;
 }
 

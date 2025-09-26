@@ -35,7 +35,7 @@ interface PayrollRecord {
 interface PayrollDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  payroll: PayrollRecord | null;
+  payroll: PayrollRecord | null | any;
   onDownloadPDF: (payroll: PayrollRecord) => void;
 }
 
@@ -63,8 +63,8 @@ export default function PayrollDetailsModal({ isOpen, onClose, payroll, onDownlo
     }
   };
 
-  const totalAllowances = Object.values(payroll.allowances).reduce((sum, val) => sum + val, 0);
-  const totalDeductions = Object.values(payroll.deductions).reduce((sum, val) => sum + val, 0);
+  const totalAllowances = Object.values(payroll.allowances).reduce((sum: any, val: any) => sum + val, 0);
+  const totalDeductions = Object.values(payroll.deductions).reduce((sum: any, val: any) => sum + val, 0);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -206,7 +206,7 @@ export default function PayrollDetailsModal({ isOpen, onClose, payroll, onDownlo
                 </div>
                 <div className="flex justify-between items-center py-3 bg-red-50 rounded-lg px-4">
                   <span className="font-semibold text-red-800">Total Deductions</span>
-                  <span className="font-bold text-red-800">{formatCurrency(totalDeductions)}</span>
+                  <span className="font-bold text-red-800">{formatCurrency(totalDeductions as any)}</span>
                 </div>
               </CardContent>
             </Card>

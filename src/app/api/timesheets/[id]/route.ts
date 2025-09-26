@@ -192,7 +192,7 @@ export async function DELETE(
       }
     }
 
-    await Timesheet.findByIdAndDelete(params.id);
+    await Timesheet.findByIdAndDelete(id);
 
     return NextResponse.json(
       { message: 'Timesheet deleted successfully' }

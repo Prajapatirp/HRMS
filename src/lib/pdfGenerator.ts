@@ -23,8 +23,8 @@ export interface PayrollRecord {
   netSalary: number;
   status: string;
   paidAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function generatePayrollPDF(payroll: PayrollRecord, employeeName?: string) {

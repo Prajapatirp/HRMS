@@ -20,7 +20,7 @@ async function markAsRead(req: NextRequest, { params }: { params: { id: string }
 
     // Check if user has already read this notification
     const alreadyRead = notification.readBy.some(
-      (read) => read.employeeId === user.employeeId
+      (read: any) => read.employeeId === user.employeeId
     );
 
     if (!alreadyRead) {

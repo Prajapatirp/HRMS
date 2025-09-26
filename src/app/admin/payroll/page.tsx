@@ -16,7 +16,7 @@ import { generatePayrollPDF } from '@/lib/pdfGenerator';
 
 interface PayrollRecord {
   _id: string;
-  employeeId: string;
+  employeeId?: string;
   month: number;
   year: number;
   basicSalary: number;
@@ -37,7 +37,8 @@ interface PayrollRecord {
   netSalary: number;
   status: string;
   paidAt?: string;
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface Employee {
@@ -141,7 +142,7 @@ export default function AdminPayrollPage() {
     setSelectedPayroll(null);
   };
 
-  const handleDownloadPDF = (record: PayrollRecord) => {
+  const handleDownloadPDF = (record: PayrollRecord | any) => {
     generatePayrollPDF(record, user?.email);
   };
 
@@ -158,7 +159,8 @@ export default function AdminPayrollPage() {
     }
   };
 
-  const getEmployeeName = (employeeId: string) => {
+  const getEmployeeName = (employeeId: string | undefined) => {
+    if (!employeeId) return 'Unknown Employee';
     const employee = employees.find(emp => emp.employeeId === employeeId);
     return employee ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}` : employeeId;
   };
@@ -344,7 +346,7 @@ export default function AdminPayrollPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {payroll.map((record) => (
+                {payroll.map((record: any) => (
                   <div key={record._id} className="p-6 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-4">
                       <div>

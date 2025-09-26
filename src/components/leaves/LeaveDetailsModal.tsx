@@ -26,10 +26,9 @@ interface LeaveRequest {
 interface LeaveDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  leave: LeaveRequest | null;
+  leave?: LeaveRequest | null | any;
   employeeName?: string;
   approverName?: string;
-  leave?: string;
 }
 
 const leaveTypes = {
@@ -211,7 +210,7 @@ export default function LeaveDetailsModal({ isOpen, onClose, leave, employeeName
                 Attachments
               </h4>
               <div className="space-y-1">
-                {leave.attachments.map((attachment, index) => (
+                {leave.attachments.map((attachment: any, index: any) => (
                   <div key={index} className="p-2 bg-gray-50 rounded-md flex items-center justify-between">
                     <span className="text-sm text-gray-700">{attachment}</span>
                     <Button size="sm" variant="outline">
