@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/models/Attendance';
@@ -33,9 +34,9 @@ async function getAttendance(req: NextRequest) {
     const status = searchParams.get('status');
 
     const query: any = {};
-    if (employeeId) {
-      query.employeeId = employeeId;
-    }
+    // if (employeeId) {
+    //   query.employeeId = employeeId;
+    // }
 
     // Date filtering
     if (date) {
@@ -65,6 +66,10 @@ async function getAttendance(req: NextRequest) {
     // Status filter
     if (status) {
       query.status = status;
+    }
+
+    if (employeeId && user.role !== 'admin') {
+      query.employeeId = employeeId;
     }
 
     // Get attendance records with pagination

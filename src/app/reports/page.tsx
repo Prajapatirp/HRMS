@@ -161,6 +161,68 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
     return <div>Please log in to view this page.</div>;
   }
 
+  // Show work in progress page for employees
+  if (user.role === 'employee') {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md mx-auto">
+            <div className="mb-8">
+              <div className="w-24 h-24 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-12 h-12 text-blue-600" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Reports & Analytics</h1>
+              <p className="text-lg text-gray-600 mb-6">
+                This feature is currently under development and will be available soon.
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Coming Soon!</h3>
+              <p className="text-blue-700 mb-4">
+                We're working hard to bring you comprehensive reporting and analytics features.
+              </p>
+              <div className="space-y-2 text-sm text-blue-600">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                  Personal attendance reports
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                  Leave history and trends
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                  Performance summaries
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                  Payroll statements
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Button 
+                onClick={() => window.history.back()}
+                variant="outline"
+                className="w-full"
+              >
+                Go Back
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/dashboard'}
+                className="w-full"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   if (loading) {
     return (
       <Layout>

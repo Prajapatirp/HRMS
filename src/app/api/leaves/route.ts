@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Leave from '@/models/Leave';
@@ -24,7 +25,7 @@ async function getLeaves(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     const query: any = {};
-    if (employeeId) {
+    if (employeeId && user.role !== 'admin') {
       query.employeeId = employeeId;
     }
     
@@ -98,7 +99,7 @@ async function createLeave(req: NextRequest) {
     const end = new Date(endDate);
     
     // Validate dates
-    if (start >= end) {
+    if (start > end) {
       return NextResponse.json(
         { error: 'End date must be after start date' },
         { status: 400 }

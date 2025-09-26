@@ -7,7 +7,7 @@ async function setupAdminEmployee() {
     await connectDB();
     
     // Find the admin user
-    const admin = await User.findOne({ email: 'admin@hrms.com' });
+    const admin = await User.findOne({ email: 'admin@yopmail.com' });
     if (!admin) {
       console.log('❌ Admin user not found!');
       return;
@@ -29,7 +29,7 @@ async function setupAdminEmployee() {
       personalInfo: {
         firstName: 'Admin',
         lastName: 'User',
-        email: 'admin@hrms.com',
+        email: 'admin@yopmail.com',
         phone: '+1234567890',
         address: {
           street: '123 Admin Street',

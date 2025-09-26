@@ -30,13 +30,17 @@ const getNavigation = (userRole: string) => {
     { name: 'Payroll', href: '/payroll', icon: DollarSign },
     { name: 'Performance', href: '/performance', icon: TrendingUp },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   // Add Employees page for admin and HR users only
   if (userRole === 'admin' || userRole === 'hr') {
     baseNavigation.splice(1, 0, { name: 'Employees', href: '/employees', icon: Users });
+  }
+
+  // Add Reports page for admin, HR, and manager users only
+  if (userRole === 'admin' || userRole === 'hr' || userRole === 'manager') {
+    baseNavigation.splice(-1, 0, { name: 'Reports', href: '/reports', icon: BarChart3 });
   }
 
   return baseNavigation;

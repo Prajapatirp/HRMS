@@ -17,8 +17,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const projects = await Project.find({ status: 'active' })
-      .select('name description status startDate endDate')
+    // For admin/HR users, show all projects. For others, show only active projects
+    const query = (decoded.role === 'admin' || decoded.role === 'hr') 
+      ? {} 
+      : { status: 'active' };
+    
+    const projects = await Project.find(query)
+      .select('name description status startDate endDate createdBy createdAt updatedAt')
       .sort({ name: 1 });
 
     return NextResponse.json({ projects });

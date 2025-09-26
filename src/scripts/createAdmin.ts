@@ -7,17 +7,17 @@ async function createAdmin() {
     await connectDB();
     
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: 'admin@hrms.com' });
+    const existingAdmin = await User.findOne({ email: 'admin@yopmail.com' });
     if (existingAdmin) {
       console.log('Admin user already exists!');
       return;
     }
 
     // Create admin user
-    const hashedPassword = await hashPassword('admin123');
+    const hashedPassword = await hashPassword('Admin@123');
     
     const admin = new User({
-      email: 'admin@hrms.com',
+      email: 'admin@yopmail.com',
       password: hashedPassword,
       role: 'admin',
       isActive: true,
@@ -26,8 +26,8 @@ async function createAdmin() {
     await admin.save();
     
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@hrms.com');
-    console.log('🔑 Password: admin123');
+    console.log('📧 Email: admin@yopmail.com');
+    console.log('🔑 Password: Admin@123');
     console.log('👤 Role: Admin');
     
   } catch (error) {

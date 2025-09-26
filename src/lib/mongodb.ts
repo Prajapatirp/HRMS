@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI! || 'mongodb://localhost:27017/demo-hrms';
+const MONGODB_URI = process.env.MONGODB_URI! || 'mongodb+srv://ravipraeclarum:jt0dX6gXMiCICDgU@cluster0.4dtn8.mongodb.net/hrms?retryWrites=true&w=majority';
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
@@ -16,14 +16,17 @@ declare global {
   var mongoose: any;
 }
 
-let cached = global.mongoose;
+let cached = global.mongoose
 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
 async function connectDB() {
+
+  console.log('MONGODB_URI', MONGODB_URI);
   if (cached.conn) {
+    console.log('cached.conn', cached.conn);
     return cached.conn;
   }
 
@@ -33,6 +36,7 @@ async function connectDB() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('mongoose', mongoose);
       return mongoose;
     });
   }

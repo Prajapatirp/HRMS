@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Plus, Edit, Trash2, FolderOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 
 interface Project {
   _id: string;
@@ -24,12 +23,14 @@ interface Project {
 }
 
 export default function AdminProjectsPage() {
-  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -44,6 +45,26 @@ export default function AdminProjectsPage() {
     fetchProjects();
   }, []);
 
+  // Filter projects based on search term and status
+  useEffect(() => {
+    let filtered = projects;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(project =>
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(project => project.status === statusFilter);
+    }
+
+    setFilteredProjects(filtered);
+  }, [projects, searchTerm, statusFilter]);
+
   const fetchProjects = async () => {
     try {
       setLoading(true);
@@ -57,9 +78,13 @@ export default function AdminProjectsPage() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data.projects);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to fetch projects');
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
+      alert('Failed to fetch projects. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -67,6 +92,23 @@ export default function AdminProjectsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.name.trim()) {
+      alert('Project name is required');
+      return;
+    }
+
+    // Date validation
+    if (formData.startDate && formData.endDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      if (startDate > endDate) {
+        alert('Start date cannot be after end date');
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -87,6 +129,7 @@ export default function AdminProjectsPage() {
       });
 
       if (response.ok) {
+        alert(editingProject ? 'Project updated successfully!' : 'Project created successfully!');
         setShowForm(false);
         setEditingProject(null);
         resetForm();
@@ -97,7 +140,7 @@ export default function AdminProjectsPage() {
       }
     } catch (error) {
       console.error('Error saving project:', error);
-      alert('Failed to save project');
+      alert('Failed to save project. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +159,10 @@ export default function AdminProjectsPage() {
   };
 
   const handleDelete = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    const project = projects.find(p => p._id === projectId);
+    const projectName = project?.name || 'this project';
+    
+    if (!confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -128,6 +174,7 @@ export default function AdminProjectsPage() {
       });
 
       if (response.ok) {
+        alert('Project deleted successfully!');
         fetchProjects();
       } else {
         const error = await response.json();
@@ -135,7 +182,7 @@ export default function AdminProjectsPage() {
       }
     } catch (error) {
       console.error('Error deleting project:', error);
-      alert('Failed to delete project');
+      alert('Failed to delete project. Please try again.');
     }
   };
 
@@ -257,16 +304,46 @@ export default function AdminProjectsPage() {
         </Card>
       )}
 
-      {/* Projects Table */}
+      {/* Search and Filter */}
       <Card>
         <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold">Projects</h2>
+          <h2 className="text-lg font-semibold mb-4">Projects</h2>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search projects by name or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="sm:w-48">
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="completed">Completed</option>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-2 text-sm text-gray-600">
+            Showing {filteredProjects.length} of {projects.length} projects
+          </div>
         </div>
         {loading ? (
           <div className="p-8 text-center">Loading...</div>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            No projects found. Create your first project.
+            {projects.length === 0 
+              ? "No projects found. Create your first project."
+              : "No projects match your search criteria."
+            }
           </div>
         ) : (
           <Table>
@@ -282,7 +359,7 @@ export default function AdminProjectsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <TableRow key={project._id}>
                   <TableCell className="font-medium">
                     {project.name}

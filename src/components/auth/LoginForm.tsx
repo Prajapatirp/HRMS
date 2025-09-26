@@ -82,12 +82,12 @@ export default function LoginForm() {
           </button>
         </form>
         
-        <div className="mt-6 text-center text-sm text-gray-600">
+        {/* <div className="mt-6 text-center text-sm text-gray-600">
           <p>Default Admin Credentials:</p>
           <p className="font-mono bg-gray-100 p-2 rounded mt-2">
             admin@hrms.com / admin123
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
