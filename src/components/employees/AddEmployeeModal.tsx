@@ -108,7 +108,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
   const handleInputChange = (section: string, field: string, value: string) => {
     if (section === 'personalInfo' && field.includes('.')) {
       const [parent, child] = field.split('.');
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         personalInfo: {
           ...prev.personalInfo,
