@@ -3,11 +3,11 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken, verifyToken, extractTokenFromHeader } from '@/lib/auth';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest | any | string | null) {
   try {
     await connectDB();
     
-    const token = extractTokenFromHeader(request.headers.get('authorization'));
+    const token = extractTokenFromHeader(request.headers.get('authorization') as string | undefined | any);
     
     if (!token) {
       return NextResponse.json(
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     let payload;
     try {
       payload = verifyToken(token);
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error) {
-    console.error('Token refresh error:', error);
+  } catch {
+    console.error('Token refresh error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Calendar, Clock, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Project {
   _id: string;

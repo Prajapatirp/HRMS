@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Payroll from '@/models/Payroll';
-import Employee from '@/models/Employee';
-import Attendance from '@/models/Attendance';
+// import Employee from '@/models/Employee';
+// import Attendance from '@/models/Attendance';
 import { requireRole, requireAuth } from '@/middleware/auth';
 
 async function getPayroll(req: NextRequest) {

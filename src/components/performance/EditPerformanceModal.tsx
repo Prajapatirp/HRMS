@@ -228,7 +228,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
       } else {
         setError(data.error || 'Failed to update performance review');
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);

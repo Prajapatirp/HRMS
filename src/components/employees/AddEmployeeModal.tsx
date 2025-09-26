@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, User, Mail, Phone, MapPin, Calendar, DollarSign } from 'lucide-react';
+import { X, User, Phone, MapPin, DollarSign } from 'lucide-react';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -98,7 +98,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
       } else {
         setError(data.error || 'Failed to create employee');
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);

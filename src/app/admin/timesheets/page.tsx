@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+// import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Check, X, Eye, Calendar, Clock, Users, FileText } from 'lucide-react';
+import { Check, X, Eye, Clock, FileText } from 'lucide-react';
 
 interface Project {
   _id: string;
@@ -46,7 +46,6 @@ interface Timesheet {
 }
 
 export default function AdminTimesheetsPage() {
-  const { user } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);

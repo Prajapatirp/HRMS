@@ -141,7 +141,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
       } else {
         setError(data.error || 'Failed to create payroll');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to create payroll. Please try again.');
     } finally {
       setLoading(false);

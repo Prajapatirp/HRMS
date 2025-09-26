@@ -10,7 +10,7 @@ async function getDashboardStats(req: NextRequest) {
   try {
     await connectDB();
     
-    const { user } = (req as any);
+    // const { user } = (req as any);
     const { searchParams } = new URL(req.url);
     const month = parseInt(searchParams.get('month') || new Date().getMonth() + 1);
     const year = parseInt(searchParams.get('year') || new Date().getFullYear());

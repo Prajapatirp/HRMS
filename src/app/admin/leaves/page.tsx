@@ -5,11 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { FileText, CheckCircle, XCircle, Search, Filter, Clock } from 'lucide-react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import LeaveDetailsModal from '@/components/leaves/LeaveDetailsModal';
 
 interface LeaveRequest {

@@ -11,7 +11,7 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 export const authenticateToken = (req: NextRequest): { user: any; error?: string } => {
-  const token = extractTokenFromHeader(req.headers.get('authorization'));
+  const token = extractTokenFromHeader(req.headers.get('authorization') as string | undefined | any);
   
   if (!token) {
     return { user: null, error: 'Access token required' };
@@ -20,7 +20,7 @@ export const authenticateToken = (req: NextRequest): { user: any; error?: string
   try {
     const payload = verifyToken(token);
     return { user: payload };
-  } catch (error) {
+  } catch {
     return { user: null, error: 'Invalid or expired token' };
   }
 };

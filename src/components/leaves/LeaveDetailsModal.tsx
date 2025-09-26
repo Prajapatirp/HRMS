@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Calendar, Clock, User, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { X, Calendar, Clock, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 interface LeaveRequest {
@@ -29,6 +29,7 @@ interface LeaveDetailsModalProps {
   leave: LeaveRequest | null;
   employeeName?: string;
   approverName?: string;
+  leave?: string;
 }
 
 const leaveTypes = {

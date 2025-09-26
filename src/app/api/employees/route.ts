@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Employee from '@/models/Employee';
 import User from '@/models/User';
-import { requireAuth, requireRole } from '@/middleware/auth';
+import { requireRole } from '@/middleware/auth';
 import { hashPassword } from '@/lib/auth';
 
 async function getEmployees(req: NextRequest) {

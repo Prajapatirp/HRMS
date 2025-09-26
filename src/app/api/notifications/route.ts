@@ -58,11 +58,11 @@ async function getNotifications(req: NextRequest) {
   }
 }
 
-async function createNotification(req: NextRequest) {
+async function createNotification(request: NextRequest | any | string | null) {
   try {
     await connectDB();
     
-    const notificationData = await request.json();
+    const notificationData = await request.json() as any;
 
     const notification = new Notification(notificationData);
     await notification.save();

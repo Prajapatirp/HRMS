@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
@@ -20,7 +20,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const project = await Project.findById(params.id);
+    const { id } = await params;
+    const project = await Project.findById(id);
     if (!project) {
       return NextResponse.json(
         { error: 'Project not found' },
@@ -40,7 +41,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
@@ -55,7 +56,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const project = await Project.findById(params.id);
+    const { id } = await params;
+    const project = await Project.findById(id);
     if (!project) {
       return NextResponse.json(
         { error: 'Project not found' },
@@ -89,7 +91,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     await connectDB();
@@ -104,7 +106,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const project = await Project.findById(params.id);
+    const { id } = await params;
+    const project = await Project.findById(id);
     if (!project) {
       return NextResponse.json(
         { error: 'Project not found' },

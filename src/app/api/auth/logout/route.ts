@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAuth } from '@/middleware/auth';
 
-async function logout(req: NextRequest) {
+async function logout() {
   try {
     // The requireAuth middleware already validates the token
     // For JWT tokens, we don't need to blacklist them on the server side
