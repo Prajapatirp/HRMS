@@ -40,6 +40,8 @@ interface PerformanceReview {
   status: string;
   reviewedBy: string;
   reviewedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface PaginationInfo {
@@ -419,7 +421,7 @@ export default function PerformancePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {performance.map((review) => (
+                  {performance.map((review: any) => (
                     <TableRow key={review._id}>
                       <TableCell>
                         <div>

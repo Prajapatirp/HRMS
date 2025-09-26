@@ -37,7 +37,7 @@ interface PerformanceReview {
 interface PerformanceDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  review: PerformanceReview | null;
+  review: PerformanceReview | null | any;
 }
 
 export default function PerformanceDetailsModal({ isOpen, onClose, review }: PerformanceDetailsModalProps) {
@@ -146,7 +146,7 @@ export default function PerformanceDetailsModal({ isOpen, onClose, review }: Per
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {review.goals.map((goal, index) => (
+                {review.goals.map((goal: any, index: any) => (
                   <div key={index} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium text-gray-900">{goal.description}</h4>
@@ -183,7 +183,7 @@ export default function PerformanceDetailsModal({ isOpen, onClose, review }: Per
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {review.competencies.map((competency, index) => (
+                {review.competencies.map((competency: any, index: any) => (
                   <div key={index} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">{competency.skill}</h4>
@@ -209,7 +209,7 @@ export default function PerformanceDetailsModal({ isOpen, onClose, review }: Per
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {review.strengths.map((strength, index) => (
+                  {review.strengths.map((strength: any, index: any) => (
                     <li key={index} className="flex items-start">
                       <span className="text-green-500 mr-2 mt-1">•</span>
                       <span className="text-sm text-gray-600">{strength}</span>
@@ -225,7 +225,7 @@ export default function PerformanceDetailsModal({ isOpen, onClose, review }: Per
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {review.areasForImprovement.map((area, index) => (
+                  {review.areasForImprovement.map((area: any, index: any) => (
                     <li key={index} className="flex items-start">
                       <span className="text-orange-500 mr-2 mt-1">•</span>
                       <span className="text-sm text-gray-600">{area}</span>
