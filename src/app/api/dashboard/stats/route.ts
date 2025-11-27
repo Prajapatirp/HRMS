@@ -12,8 +12,11 @@ async function getDashboardStats(req: NextRequest) {
     
     // const { user } = (req as any);
     const { searchParams } = new URL(req.url);
-    const month = parseInt(searchParams.get('month') || new Date().getMonth() + 1);
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear());
+    
+    const monthParam = searchParams.get('month');
+    const month = monthParam ? parseInt(monthParam) : new Date().getMonth() + 1;
+    const yearParam = searchParams.get('year');
+    const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
 
     // Get current month date range
     const startDate = new Date(year, month - 1, 1);
