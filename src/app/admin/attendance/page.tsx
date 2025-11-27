@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Clock, CheckCircle, XCircle, Search, Filter, User } from 'lucide-react';
+import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 interface AttendanceRecord {
@@ -22,6 +23,15 @@ interface AttendanceRecord {
   status: string;
   notes?: string;
   createdAt: string;
+}
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 interface Employee {
@@ -41,16 +51,28 @@ export default function AdminAttendancePage() {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   const [filters, setFilters] = useState({
     employeeId: '',
     month: '',
     year: new Date().getFullYear().toString(),
-    status: ''
+    status: '',
+    limit: '10'
   });
 
-  const fetchAttendance = useCallback(async () => {
+  const fetchAttendance = useCallback(async (page = 1) => {
     try {
+      setLoading(true);
       const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', filters.limit);
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
       if (filters.month) queryParams.append('month', filters.month);
       if (filters.year) queryParams.append('year', filters.year);
@@ -65,6 +87,9 @@ export default function AdminAttendancePage() {
       if (response.ok) {
         const data = await response.json();
         setAttendance(data.attendance);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       } else {
         console.error('Failed to fetch attendance data');
       }
@@ -193,8 +218,12 @@ export default function AdminAttendancePage() {
   };
 
   const applyFilters = () => {
-    setLoading(true);
-    fetchAttendance();
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchAttendance(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    fetchAttendance(newPage);
   };
 
   const getStatusColor = (status: string) => {
@@ -230,15 +259,192 @@ export default function AdminAttendancePage() {
   const canCheckIn = !todayPersonalAttendance?.checkIn;
   const canCheckOut = todayPersonalAttendance?.checkIn && !todayPersonalAttendance?.checkOut;
 
+  // Define columns for admin attendance table
+  const attendanceColumns: Column<AttendanceRecord>[] = [
+    {
+      key: 'employeeId',
+      label: 'Employee Name',
+      minWidth: '150px',
+      render: (value) => (
+        <span className="font-medium">{getEmployeeName(value)}</span>
+      ),
+      mobileLabel: 'Employee',
+      mobileRender: (value) => (
+        <span className="font-semibold text-gray-900">{getEmployeeName(value)}</span>
+      ),
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      minWidth: '120px',
+      render: (value) => <span className="font-medium">{formatDate(value)}</span>,
+      mobileLabel: 'Date',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '100px',
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(value)}`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'checkIn',
+      label: 'Check In',
+      minWidth: '140px',
+      render: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <span>{formatDateTime(value)}</span>
+        </div>
+      ) : <span className="text-gray-400">Not checked in</span>,
+      mobileLabel: 'Check In',
+      mobileRender: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <CheckCircle className="h-3 w-3 text-green-600" />
+          <span className="text-sm font-medium">{formatDateTime(value)}</span>
+        </div>
+      ) : <span className="text-sm text-gray-400">Not checked in</span>,
+    },
+    {
+      key: 'checkOut',
+      label: 'Check Out',
+      minWidth: '140px',
+      render: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <span>{formatDateTime(value)}</span>
+        </div>
+      ) : <span className="text-gray-400">Not checked out</span>,
+      mobileLabel: 'Check Out',
+      mobileRender: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <XCircle className="h-3 w-3 text-red-600" />
+          <span className="text-sm font-medium">{formatDateTime(value)}</span>
+        </div>
+      ) : <span className="text-sm text-gray-400">Not checked out</span>,
+    },
+    {
+      key: 'totalHours',
+      label: 'Total Hours',
+      minWidth: '100px',
+      render: (value) => value ? (
+        <span className="font-medium">{value.toFixed(2)}h</span>
+      ) : <span className="text-gray-400">N/A</span>,
+      mobileLabel: 'Total Hours',
+      mobileRender: (value) => value ? (
+        <span className="text-sm font-medium">{value.toFixed(2)}h</span>
+      ) : <span className="text-sm text-gray-400">N/A</span>,
+    },
+    {
+      key: 'overtimeHours',
+      label: 'Overtime',
+      minWidth: '100px',
+      render: (value) => value && value > 0 ? (
+        <span className="text-orange-600 font-medium">+{value.toFixed(2)}h</span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Overtime',
+      mobileRender: (value) => value && value > 0 ? (
+        <span className="text-sm font-medium text-orange-600">+{value.toFixed(2)}h</span>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      minWidth: '200px',
+      render: (value) => value ? (
+        <span className="text-sm text-gray-600 truncate max-w-[200px] block" title={value}>
+          {value}
+        </span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Notes',
+      hideOnMobile: false,
+    },
+  ];
+
+  // Custom mobile card render for admin attendance
+  const renderAttendanceMobileCard = (record: AttendanceRecord) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-1">
+              <User className="h-4 w-4 text-gray-500" />
+              <span className="font-semibold text-gray-900">{getEmployeeName(record.employeeId)}</span>
+            </div>
+            <span className="text-sm text-gray-600">{formatDate(record.date)}</span>
+          </div>
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
+            {record.status}
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Check In</p>
+            {record.checkIn ? (
+              <div className="flex items-center space-x-1">
+                <CheckCircle className="h-3 w-3 text-green-600" />
+                <span className="text-sm font-medium">{formatDateTime(record.checkIn)}</span>
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">Not checked in</span>
+            )}
+          </div>
+          
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Check Out</p>
+            {record.checkOut ? (
+              <div className="flex items-center space-x-1">
+                <XCircle className="h-3 w-3 text-red-600" />
+                <span className="text-sm font-medium">{formatDateTime(record.checkOut)}</span>
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">Not checked out</span>
+            )}
+          </div>
+          
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Total Hours</p>
+            {record.totalHours ? (
+              <span className="text-sm font-medium">{record.totalHours.toFixed(2)}h</span>
+            ) : (
+              <span className="text-sm text-gray-400">N/A</span>
+            )}
+          </div>
+          
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Overtime</p>
+            {record.overtimeHours && record.overtimeHours > 0 ? (
+              <span className="text-sm font-medium text-orange-600">+{record.overtimeHours.toFixed(2)}h</span>
+            ) : (
+              <span className="text-sm text-gray-400">-</span>
+            )}
+          </div>
+        </div>
+        
+        {record.notes && (
+          <div className="mt-3 pt-3 border-t">
+            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            <p className="text-sm text-gray-700">{record.notes}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (token && user?.role === 'admin') {
-      fetchAttendance();
+      fetchAttendance(1);
       fetchEmployees();
       if (user.employeeId) {
         fetchPersonalAttendance();
       }
     }
-  }, [token, user, fetchAttendance, fetchEmployees, fetchPersonalAttendance]);
+  }, [token, user, fetchEmployees, fetchPersonalAttendance]);
 
   if (!user) {
     return <div>Please log in to view this page.</div>;
@@ -387,7 +593,7 @@ export default function AdminAttendancePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <Label htmlFor="employee">Employee</Label>
                 <Select
@@ -446,12 +652,41 @@ export default function AdminAttendancePage() {
                   <option value="holiday">Holiday</option>
                 </Select>
               </div>
+
+              <div>
+                <Label htmlFor="limit">Records per page</Label>
+                <Select
+                  value={filters.limit}
+                  onChange={(e) => handleFilterChange('limit', e.target.value)}
+                >
+                  <option value="5">5 records</option>
+                  <option value="10">10 records</option>
+                  <option value="20">20 records</option>
+                  <option value="50">50 records</option>
+                </Select>
+              </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={applyFilters} className="flex items-center space-x-2">
                 <Search className="h-4 w-4" />
                 <span>Apply Filters</span>
+              </Button>
+              <Button 
+                onClick={() => {
+                  setFilters({
+                    employeeId: '',
+                    month: '',
+                    year: new Date().getFullYear().toString(),
+                    status: '',
+                    limit: '10'
+                  });
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                  setTimeout(() => fetchAttendance(1), 100);
+                }} 
+                variant="outline"
+              >
+                Clear Filters
               </Button>
             </div>
           </CardContent>
@@ -460,75 +695,25 @@ export default function AdminAttendancePage() {
         {/* Attendance Records */}
         <Card>
           <CardHeader>
-            <CardTitle>Attendance Records</CardTitle>
+            <CardTitle>Attendance History</CardTitle>
             <CardDescription>
-              Showing {attendance.length} attendance records
+              Showing {attendance.length} of {pagination.total} records
+              {pagination.total > 0 && (
+                <span> (Page {pagination.page} of {pagination.pages})</span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {attendance.map((record) => (
-                  <div key={record._id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-medium text-lg">
-                            {getEmployeeName(record.employeeId)}
-                          </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
-                            {record.status}
-                          </span>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                          <div>
-                            <span className="font-medium">Date:</span>
-                            <p>{formatDate(record.date)}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Check In:</span>
-                            <p>{record.checkIn ? formatDateTime(record.checkIn) : 'Not checked in'}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Check Out:</span>
-                            <p>{record.checkOut ? formatDateTime(record.checkOut) : 'Not checked out'}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Total Hours:</span>
-                            <p>{record.totalHours ? `${record.totalHours}h` : 'N/A'}</p>
-                          </div>
-                        </div>
-                        
-                        {record.overtimeHours && record.overtimeHours > 0 && (
-                          <div className="mt-2 text-sm text-orange-600">
-                            <span className="font-medium">Overtime:</span> {record.overtimeHours}h
-                          </div>
-                        )}
-                        
-                        {record.notes && (
-                          <div className="mt-2 text-sm text-gray-600">
-                            <span className="font-medium">Notes:</span> {record.notes}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {attendance.length === 0 && !loading && (
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No attendance records</h3>
-                <p className="text-gray-600">No attendance records found for the selected filters.</p>
-              </div>
-            )}
+            <DynamicTable
+              data={attendance}
+              columns={attendanceColumns}
+              loading={loading}
+              emptyMessage="No attendance records found for the selected filters."
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              keyExtractor={(record) => record._id}
+              mobileCardRender={renderAttendanceMobileCard}
+            />
           </CardContent>
         </Card>
       </div>

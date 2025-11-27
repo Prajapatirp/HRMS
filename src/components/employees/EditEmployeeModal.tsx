@@ -40,7 +40,7 @@ interface Employee {
 interface EditEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  employee: Employee | null | any;
+  employee: Employee | null;
   onSuccess: () => void;
 }
 
@@ -151,7 +151,7 @@ export default function EditEmployeeModal({ isOpen, onClose, employee, onSuccess
   const handleInputChange = (section: string, field: string, value: string) => {
     if (section === 'personalInfo' && field.includes('.')) {
       const [parent, child] = field.split('.');
-      setFormData((prev: any) => ({
+      setFormData(prev => ({
         ...prev,
         personalInfo: {
           ...prev.personalInfo,
@@ -162,7 +162,7 @@ export default function EditEmployeeModal({ isOpen, onClose, employee, onSuccess
         },
       }));
     } else {
-      setFormData((prev: any) => ({
+      setFormData(prev => ({
         ...prev,
         [section]: {
           ...prev[section as keyof typeof prev],

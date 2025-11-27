@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Clock, CheckCircle, XCircle, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
+import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDateTime, formatDate } from '@/lib/utils';
 
 interface AttendanceRecord {
@@ -180,6 +181,196 @@ export default function AttendancePage() {
 
   const handlePageChange = (newPage: number) => {
     fetchAttendance(newPage);
+  };
+
+  // Define columns for attendance table
+  const attendanceColumns: Column<AttendanceRecord>[] = [
+    {
+      key: 'date',
+      label: 'Date',
+      minWidth: '120px',
+      render: (value) => <span className="font-medium">{formatDate(value)}</span>,
+      mobileLabel: 'Date',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '100px',
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          value === 'present' ? 'bg-green-100 text-green-800' :
+          value === 'absent' ? 'bg-red-100 text-red-800' :
+          value === 'late' ? 'bg-yellow-100 text-yellow-800' :
+          value === 'half-day' ? 'bg-blue-100 text-blue-800' :
+          'bg-gray-100 text-gray-800'
+        }`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'checkIn',
+      label: 'Check In',
+      minWidth: '120px',
+      render: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <span>{new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Check In',
+      mobileRender: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <CheckCircle className="h-3 w-3 text-green-600" />
+          <span className="text-sm font-medium">
+            {new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'checkOut',
+      label: 'Check Out',
+      minWidth: '120px',
+      render: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <span>{new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Check Out',
+      mobileRender: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <XCircle className="h-3 w-3 text-red-600" />
+          <span className="text-sm font-medium">
+            {new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'totalHours',
+      label: 'Total Hours',
+      minWidth: '100px',
+      render: (value) => value ? (
+        <span className="font-medium">{value.toFixed(2)}h</span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Total Hours',
+      mobileRender: (value) => value ? (
+        <span className="text-sm font-medium">{value.toFixed(2)}h</span>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'overtimeHours',
+      label: 'Overtime',
+      minWidth: '100px',
+      render: (value) => value && value > 0 ? (
+        <span className="text-orange-600 font-medium">+{value.toFixed(2)}h</span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Overtime',
+      mobileRender: (value) => value && value > 0 ? (
+        <span className="text-sm font-medium text-orange-600">+{value.toFixed(2)}h</span>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      minWidth: '200px',
+      render: (value) => value ? (
+        <span className="text-sm text-gray-600 truncate max-w-[200px] block" title={value}>
+          {value}
+        </span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Notes',
+      hideOnMobile: false,
+    },
+  ];
+
+  // Custom mobile card render for attendance
+  const renderAttendanceMobileCard = (record: AttendanceRecord) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-1">
+              <div className={`w-3 h-3 rounded-full ${
+                record.status === 'present' ? 'bg-green-500' :
+                record.status === 'absent' ? 'bg-red-500' :
+                record.status === 'late' ? 'bg-yellow-500' :
+                record.status === 'half-day' ? 'bg-blue-500' :
+                'bg-gray-500'
+              }`}></div>
+              <span className="font-semibold text-gray-900">{formatDate(record.date)}</span>
+            </div>
+            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              record.status === 'present' ? 'bg-green-100 text-green-800' :
+              record.status === 'absent' ? 'bg-red-100 text-red-800' :
+              record.status === 'late' ? 'bg-yellow-100 text-yellow-800' :
+              record.status === 'half-day' ? 'bg-blue-100 text-blue-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {record.status}
+            </span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Check In</p>
+            {record.checkIn ? (
+              <div className="flex items-center space-x-1">
+                <CheckCircle className="h-3 w-3 text-green-600" />
+                <span className="text-sm font-medium">
+                  {new Date(record.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">-</span>
+            )}
+          </div>
+          
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Check Out</p>
+            {record.checkOut ? (
+              <div className="flex items-center space-x-1">
+                <XCircle className="h-3 w-3 text-red-600" />
+                <span className="text-sm font-medium">
+                  {new Date(record.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">-</span>
+            )}
+          </div>
+          
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Total Hours</p>
+            {record.totalHours ? (
+              <span className="text-sm font-medium">{record.totalHours.toFixed(2)}h</span>
+            ) : (
+              <span className="text-sm text-gray-400">-</span>
+            )}
+          </div>
+          
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Overtime</p>
+            {record.overtimeHours && record.overtimeHours > 0 ? (
+              <span className="text-sm font-medium text-orange-600">+{record.overtimeHours.toFixed(2)}h</span>
+            ) : (
+              <span className="text-sm text-gray-400">-</span>
+            )}
+          </div>
+        </div>
+        
+        {record.notes && (
+          <div className="mt-3 pt-3 border-t">
+            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            <p className="text-sm text-gray-700">{record.notes}</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (!user) {
@@ -390,112 +581,16 @@ export default function AttendancePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {attendance.map((record) => (
-                  <div key={record._id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-3 h-3 rounded-full ${
-                        record.status === 'present' ? 'bg-green-500' :
-                        record.status === 'absent' ? 'bg-red-500' :
-                        record.status === 'late' ? 'bg-yellow-500' : 'bg-gray-500'
-                      }`}></div>
-                      <div>
-                        <p className="font-medium">{formatDate(record.date)}</p>
-                        <p className="text-sm text-gray-600 capitalize">{record.status}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      {record.checkIn && (
-                        <p className="text-sm">
-                          In: {new Date(record.checkIn).toLocaleTimeString()}
-                        </p>
-                      )}
-                      {record.checkOut && (
-                        <p className="text-sm">
-                          Out: {new Date(record.checkOut).toLocaleTimeString()}
-                        </p>
-                      )}
-                      {record.totalHours && (
-                        <p className="text-sm font-medium">
-                          {record.totalHours}h
-                          {record.overtimeHours && record.overtimeHours > 0 && (
-                            <span className="text-orange-600 ml-1">
-                              (+{record.overtimeHours}h)
-                            </span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            {pagination.pages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} records
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={!pagination.hasPrev}
-                    className="flex items-center space-x-1"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                      let pageNum;
-                      if (pagination.pages <= 5) {
-                        pageNum = i + 1;
-                      } else if (pagination.page <= 3) {
-                        pageNum = i + 1;
-                      } else if (pagination.page >= pagination.pages - 2) {
-                        pageNum = pagination.pages - 4 + i;
-                      } else {
-                        pageNum = pagination.page - 2 + i;
-                      }
-                      
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={pagination.page === pageNum ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(pageNum)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={!pagination.hasNext}
-                    className="flex items-center space-x-1"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            <DynamicTable
+              data={attendance}
+              columns={attendanceColumns}
+              loading={loading}
+              emptyMessage="No attendance records found."
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              keyExtractor={(record) => record._id}
+              mobileCardRender={renderAttendanceMobileCard}
+            />
           </CardContent>
         </Card>
       </div>

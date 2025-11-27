@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/models/Attendance';
+import User from '@/models/User';
 import { requireAuth } from '@/middleware/auth';
 
 async function getAttendance(req: NextRequest) {
@@ -9,15 +10,7 @@ async function getAttendance(req: NextRequest) {
     
     const { user } = (req as any);
     const { searchParams } = new URL(req.url);
-    const employeeId = searchParams.get('employeeId') || user.employeeId;
-    
-    // For admin users, if no specific employeeId is requested, get all attendance
-    if (!employeeId && user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Employee ID not found. Please contact HR to set up your employee profile.' },
-        { status: 400 }
-      );
-    }
+    const requestedEmployeeId = searchParams.get('employeeId');
 
     // Pagination parameters
     const page = parseInt(searchParams.get('page') || '1');
@@ -33,9 +26,32 @@ async function getAttendance(req: NextRequest) {
     const status = searchParams.get('status');
 
     const query: any = {};
-    // if (employeeId) {
-    //   query.employeeId = employeeId;
-    // }
+    
+    // Handle employeeId filtering based on user role and request
+    if (user.role === 'admin') {
+      // Admin user logic
+      if (requestedEmployeeId) {
+        // Admin requested specific employee - show that employee's records
+        query.employeeId = requestedEmployeeId;
+      } else {
+        // Admin viewing employee attendance page - exclude admin's own employeeId
+        const adminUser = await User.findById(user.userId);
+        if (adminUser && adminUser.employeeId) {
+          // Exclude admin's own employeeId from results
+          query.employeeId = { $ne: adminUser.employeeId };
+        }
+        // If admin has no employeeId, show all employee records (no filter needed)
+      }
+    } else {
+      // Non-admin users can only see their own attendance
+      if (!user.employeeId) {
+        return NextResponse.json(
+          { error: 'Employee ID not found. Please contact HR to set up your employee profile.' },
+          { status: 400 }
+        );
+      }
+      query.employeeId = user.employeeId;
+    }
 
     // Date filtering
     if (date) {
@@ -65,10 +81,6 @@ async function getAttendance(req: NextRequest) {
     // Status filter
     if (status) {
       query.status = status;
-    }
-
-    if (employeeId && user.role !== 'admin') {
-      query.employeeId = employeeId;
     }
 
     // Get attendance records with pagination
