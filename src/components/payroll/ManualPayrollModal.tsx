@@ -361,7 +361,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="housingAllowance"
                     type="number"
                     value={allowances.housing}
-                    onChange={(e) => setAllowances(prev => ({ ...prev, housing: e.target.value }))}
+                    onChange={(e) => setAllowances((prev: any) => ({ ...prev, housing: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -374,7 +374,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="transportAllowance"
                     type="number"
                     value={allowances.transport}
-                    onChange={(e) => setAllowances(prev => ({ ...prev, transport: e.target.value }))}
+                    onChange={(e) => setAllowances((prev: any) => ({ ...prev, transport: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -387,7 +387,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="medicalAllowance"
                     type="number"
                     value={allowances.medical}
-                    onChange={(e) => setAllowances(prev => ({ ...prev, medical: e.target.value }))}
+                    onChange={(e) => setAllowances((prev: any) => ({ ...prev, medical: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -400,7 +400,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="otherAllowance"
                     type="number"
                     value={allowances.other}
-                    onChange={(e) => setAllowances(prev => ({ ...prev, other: e.target.value }))}
+                    onChange={(e) => setAllowances((prev: any) => ({ ...prev, other: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -424,7 +424,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="tax"
                     type="number"
                     value={deductions.tax}
-                    onChange={(e) => setDeductions(prev => ({ ...prev, tax: e.target.value }))}
+                    onChange={(e) => setDeductions((prev: any) => ({ ...prev, tax: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -437,7 +437,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="insurance"
                     type="number"
                     value={deductions.insurance}
-                    onChange={(e) => setDeductions(prev => ({ ...prev, insurance: e.target.value }))}
+                    onChange={(e) => setDeductions((prev: any) => ({ ...prev, insurance: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -450,7 +450,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="loan"
                     type="number"
                     value={deductions.loan}
-                    onChange={(e) => setDeductions(prev => ({ ...prev, loan: e.target.value }))}
+                    onChange={(e) => setDeductions((prev: any) => ({ ...prev, loan: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -463,7 +463,7 @@ export default function ManualPayrollModal({ isOpen, onClose, onSuccess }: Manua
                     id="otherDeduction"
                     type="number"
                     value={deductions.other}
-                    onChange={(e) => setDeductions(prev => ({ ...prev, other: e.target.value }))}
+                    onChange={(e) => setDeductions((prev: any) => ({ ...prev, other: e.target.value }))}
                     placeholder="0.00"
                     min="0"
                     step="0.01"

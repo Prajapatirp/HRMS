@@ -72,7 +72,7 @@ export default function ApplyLeaveModal({ isOpen, onClose, onSuccess }: ApplyLea
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [field]: value
     }));

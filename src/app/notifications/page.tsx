@@ -62,8 +62,8 @@ export default function NotificationsPage() {
 
       if (response.ok) {
         // Update local state
-        setNotifications(prev => 
-          prev.map(notification => 
+        setNotifications((prev: any) => 
+          prev.map((notification: any) => 
             notification._id === notificationId
               ? {
                   ...notification,

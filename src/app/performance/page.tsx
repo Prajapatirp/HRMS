@@ -122,14 +122,14 @@ export default function PerformancePage() {
   };
 
   const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev: any) => ({
       ...prev,
       [field]: value
     }));
   };
 
   const applyFilters = () => {
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchPerformance(1);
   };
 
@@ -143,7 +143,7 @@ export default function PerformancePage() {
       reviewedBy: '',
       limit: '10'
     });
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchPerformance(1);
   };
 

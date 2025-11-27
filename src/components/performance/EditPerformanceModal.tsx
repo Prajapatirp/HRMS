@@ -100,92 +100,92 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
   }, [review]);
 
   const addGoal = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       goals: [...prev.goals, { description: '', target: '', achieved: '', rating: 1 }],
     }));
   };
 
   const removeGoal = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      goals: prev.goals.filter((_, i) => i !== index),
+      goals: prev.goals.filter((_: any, i: number) => i !== index),
     }));
   };
 
   const updateGoal = (index: number, field: string, value: string | number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      goals: prev.goals.map((goal, i) => 
+      goals: prev.goals.map((goal: any, i: number) => 
         i === index ? { ...goal, [field]: value } : goal
       ),
     }));
   };
 
   const addCompetency = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       competencies: [...prev.competencies, { skill: '', rating: 1, comments: '' }],
     }));
   };
 
   const removeCompetency = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      competencies: prev.competencies.filter((_, i) => i !== index),
+      competencies: prev.competencies.filter((_: any, i: number) => i !== index),
     }));
   };
 
   const updateCompetency = (index: number, field: string, value: string | number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      competencies: prev.competencies.map((comp, i) => 
+      competencies: prev.competencies.map((comp: any, i: number) => 
         i === index ? { ...comp, [field]: value } : comp
       ),
     }));
   };
 
   const addStrength = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       strengths: [...prev.strengths, ''],
     }));
   };
 
   const removeStrength = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      strengths: prev.strengths.filter((_, i) => i !== index),
+      strengths: prev.strengths.filter((_: any, i: number) => i !== index),
     }));
   };
 
   const updateStrength = (index: number, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      strengths: prev.strengths.map((strength, i) => 
+      strengths: prev.strengths.map((strength: any, i: number) => 
         i === index ? value : strength
       ),
     }));
   };
 
   const addAreaForImprovement = () => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       areasForImprovement: [...prev.areasForImprovement, ''],
     }));
   };
 
   const removeAreaForImprovement = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      areasForImprovement: prev.areasForImprovement.filter((_, i) => i !== index),
+      areasForImprovement: prev.areasForImprovement.filter((_: any, i: number) => i !== index),
     }));
   };
 
   const updateAreaForImprovement = (index: number, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
-      areasForImprovement: prev.areasForImprovement.map((area, i) => 
+      areasForImprovement: prev.areasForImprovement.map((area: any, i: number) => 
         i === index ? value : area
       ),
     }));
@@ -267,7 +267,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
                     id="startDate"
                     type="date"
                     value={formData.reviewPeriod.startDate}
-                    onChange={(e) => setFormData(prev => ({
+                    onChange={(e) => setFormData((prev: any) => ({
                       ...prev,
                       reviewPeriod: { ...prev.reviewPeriod, startDate: e.target.value }
                     }))}
@@ -280,7 +280,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
                     id="endDate"
                     type="date"
                     value={formData.reviewPeriod.endDate}
-                    onChange={(e) => setFormData(prev => ({
+                    onChange={(e) => setFormData((prev: any) => ({
                       ...prev,
                       reviewPeriod: { ...prev.reviewPeriod, endDate: e.target.value }
                     }))}
@@ -427,7 +427,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-2">
-                {getRatingStars(formData.overallRating, (rating) => setFormData(prev => ({ ...prev, overallRating: rating })))}
+                {getRatingStars(formData.overallRating, (rating) => setFormData((prev: any) => ({ ...prev, overallRating: rating })))}
                 <span className="text-lg font-medium text-gray-600">{formData.overallRating}/5</span>
               </div>
             </CardContent>
@@ -513,7 +513,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
                   <Input
                     id="reviewerComments"
                     value={formData.reviewerComments}
-                    onChange={(e) => setFormData(prev => ({ ...prev, reviewerComments: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, reviewerComments: e.target.value }))}
                     placeholder="Enter reviewer comments"
                     required
                   />
@@ -523,7 +523,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
                   <Input
                     id="employeeComments"
                     value={formData.employeeComments}
-                    onChange={(e) => setFormData(prev => ({ ...prev, employeeComments: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, employeeComments: e.target.value }))}
                     placeholder="Enter employee comments (optional)"
                   />
                 </div>
@@ -539,7 +539,7 @@ export default function EditPerformanceModal({ isOpen, onClose, review, onSucces
             <CardContent>
               <Select
                 value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, status: e.target.value }))}
               >
                 <option value="draft">Draft</option>
                 <option value="submitted">Submitted</option>

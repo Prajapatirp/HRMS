@@ -113,13 +113,13 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
         personalInfo: {
           ...prev.personalInfo,
           [parent]: {
-            ...prev.personalInfo[parent as keyof typeof prev.personalInfo],
+            ...(prev.personalInfo[parent as keyof typeof prev.personalInfo] as Record<string, string> || {}),
             [child]: value,
           },
         },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         [section]: {
           ...prev[section as keyof typeof prev],

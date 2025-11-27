@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Clock, CheckCircle, XCircle, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
+import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDateTime, formatDate } from '@/lib/utils';
 
 interface AttendanceRecord {
@@ -156,14 +157,14 @@ export default function AttendancePage() {
   const canCheckOut = todayAttendance?.checkIn && !todayAttendance?.checkOut;
 
   const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev: any) => ({
       ...prev,
       [field]: value
     }));
   };
 
   const applyFilters = () => {
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchAttendance(1);
   };
 
@@ -174,12 +175,208 @@ export default function AttendancePage() {
       status: '',
       limit: '10'
     });
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchAttendance(1);
   };
 
   const handlePageChange = (newPage: number) => {
     fetchAttendance(newPage);
+  };
+
+  // Define columns for attendance table
+  const attendanceColumns: Column<AttendanceRecord>[] = [
+    {
+      key: 'date',
+      label: 'Date',
+      minWidth: '120px',
+      render: (value) => <span className="font-medium">{formatDate(value)}</span>,
+      mobileLabel: 'Date',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '100px',
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          value === 'present' ? 'bg-green-100 text-green-800' :
+          value === 'absent' ? 'bg-red-100 text-red-800' :
+          value === 'late' ? 'bg-yellow-100 text-yellow-800' :
+          value === 'half-day' ? 'bg-blue-100 text-blue-800' :
+          'bg-gray-100 text-gray-800'
+        }`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'checkIn',
+      label: 'Check In',
+      minWidth: '120px',
+      render: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <span>{new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Check In',
+      mobileRender: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <CheckCircle className="h-3 w-3 text-green-600" />
+          <span className="text-sm font-medium">
+            {new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'checkOut',
+      label: 'Check Out',
+      minWidth: '120px',
+      render: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <span>{new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Check Out',
+      mobileRender: (value) => value ? (
+        <div className="flex items-center space-x-1">
+          <XCircle className="h-3 w-3 text-red-600" />
+          <span className="text-sm font-medium">
+            {new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'totalHours',
+      label: 'Total Hours',
+      minWidth: '100px',
+      render: (value) => value ? (
+        <span className="font-medium">{value.toFixed(2)}h</span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Total Hours',
+      mobileRender: (value) => value ? (
+        <span className="text-sm font-medium">{value.toFixed(2)}h</span>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'overtimeHours',
+      label: 'Overtime',
+      minWidth: '100px',
+      render: (value) => value && value > 0 ? (
+        <span className="text-orange-600 font-medium">+{value.toFixed(2)}h</span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Overtime',
+      mobileRender: (value) => value && value > 0 ? (
+        <span className="text-sm font-medium text-orange-600">+{value.toFixed(2)}h</span>
+      ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      minWidth: '200px',
+      render: (value) => value ? (
+        <span className="text-sm text-gray-600 truncate max-w-[200px] block" title={value}>
+          {value}
+        </span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Notes',
+      hideOnMobile: false,
+    },
+  ];
+
+  // Custom mobile card render for attendance
+  const renderAttendanceMobileCard = (record: AttendanceRecord) => {
+    return (
+      <div className="border rounded-lg p-3 sm:p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+        {/* Header Section */}
+        <div className="flex items-start justify-between mb-3 pb-3 border-b">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
+                record.status === 'present' ? 'bg-green-500' :
+                record.status === 'absent' ? 'bg-red-500' :
+                record.status === 'late' ? 'bg-yellow-500' :
+                record.status === 'half-day' ? 'bg-blue-500' :
+                'bg-gray-500'
+              }`}></div>
+              <span className="font-semibold text-sm sm:text-base text-gray-900 truncate">{formatDate(record.date)}</span>
+            </div>
+            <span className={`inline-flex px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${
+              record.status === 'present' ? 'bg-green-100 text-green-800' :
+              record.status === 'absent' ? 'bg-red-100 text-red-800' :
+              record.status === 'late' ? 'bg-yellow-100 text-yellow-800' :
+              record.status === 'half-day' ? 'bg-blue-100 text-blue-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {record.status}
+            </span>
+          </div>
+        </div>
+        
+        {/* Check In/Out Section */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 pb-3 border-b">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 mb-1.5">Check In</p>
+            {record.checkIn ? (
+              <div className="flex items-center space-x-1.5 min-w-0">
+                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate">
+                  {new Date(record.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs sm:text-sm text-gray-400">-</span>
+            )}
+          </div>
+          
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 mb-1.5">Check Out</p>
+            {record.checkOut ? (
+              <div className="flex items-center space-x-1.5 min-w-0">
+                <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate">
+                  {new Date(record.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs sm:text-sm text-gray-400">-</span>
+            )}
+          </div>
+        </div>
+        
+        {/* Hours Section */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 mb-1.5">Total Hours</p>
+            {record.totalHours ? (
+              <span className="text-xs sm:text-sm font-medium">{record.totalHours.toFixed(2)}h</span>
+            ) : (
+              <span className="text-xs sm:text-sm text-gray-400">-</span>
+            )}
+          </div>
+          
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 mb-1.5">Overtime</p>
+            {record.overtimeHours && record.overtimeHours > 0 ? (
+              <span className="text-xs sm:text-sm font-medium text-orange-600">+{record.overtimeHours.toFixed(2)}h</span>
+            ) : (
+              <span className="text-xs sm:text-sm text-gray-400">-</span>
+            )}
+          </div>
+        </div>
+        
+        {/* Notes Section */}
+        {record.notes && (
+          <div className="mt-3 pt-3 border-t">
+            <p className="text-xs text-gray-500 mb-1.5">Notes</p>
+            <p className="text-xs sm:text-sm text-gray-700 break-words">{record.notes}</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (!user) {
@@ -233,8 +430,8 @@ export default function AttendancePage() {
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-gray-600">Track your daily attendance and working hours</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Attendance</h1>
+          <p className="text-sm sm:text-base text-gray-600">Track your daily attendance and working hours</p>
         </div>
 
         {/* Check In/Out Card */}
@@ -254,26 +451,26 @@ export default function AttendancePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-2 flex-1">
                 {todayAttendance?.checkIn && (
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
                       Checked in at {formatDateTime(todayAttendance.checkIn)}
                     </span>
                   </div>
                 )}
                 {todayAttendance?.checkOut && (
                   <div className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-600" />
-                    <span className="text-sm">
+                    <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">
                       Checked out at {formatDateTime(todayAttendance.checkOut)}
                     </span>
                   </div>
                 )}
                 {todayAttendance?.totalHours && (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     Total hours: {todayAttendance.totalHours}h
                     {todayAttendance.overtimeHours && todayAttendance.overtimeHours > 0 && (
                       <span className="text-orange-600 ml-2">
@@ -284,12 +481,12 @@ export default function AttendancePage() {
                 )}
               </div>
               
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:space-y-0">
                 {canCheckIn && (
                   <Button 
                     onClick={handleCheckIn} 
                     disabled={checkingIn}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                   >
                     {checkingIn ? 'Checking In...' : 'Check In'}
                   </Button>
@@ -299,6 +496,7 @@ export default function AttendancePage() {
                     onClick={handleCheckOut} 
                     disabled={checkingOut}
                     variant="destructive"
+                    className="w-full sm:w-auto"
                   >
                     {checkingOut ? 'Checking Out...' : 'Check Out'}
                   </Button>
@@ -366,12 +564,12 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="mt-4 flex space-x-2">
-              <Button onClick={applyFilters} className="flex items-center space-x-2">
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:space-y-0">
+              <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
                 <Search className="h-4 w-4" />
                 <span>Apply Filters</span>
               </Button>
-              <Button onClick={clearFilters} variant="outline">
+              <Button onClick={clearFilters} variant="outline" className="w-full sm:w-auto">
                 Clear Filters
               </Button>
             </div>
@@ -390,112 +588,16 @@ export default function AttendancePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {attendance.map((record) => (
-                  <div key={record._id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-3 h-3 rounded-full ${
-                        record.status === 'present' ? 'bg-green-500' :
-                        record.status === 'absent' ? 'bg-red-500' :
-                        record.status === 'late' ? 'bg-yellow-500' : 'bg-gray-500'
-                      }`}></div>
-                      <div>
-                        <p className="font-medium">{formatDate(record.date)}</p>
-                        <p className="text-sm text-gray-600 capitalize">{record.status}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      {record.checkIn && (
-                        <p className="text-sm">
-                          In: {new Date(record.checkIn).toLocaleTimeString()}
-                        </p>
-                      )}
-                      {record.checkOut && (
-                        <p className="text-sm">
-                          Out: {new Date(record.checkOut).toLocaleTimeString()}
-                        </p>
-                      )}
-                      {record.totalHours && (
-                        <p className="text-sm font-medium">
-                          {record.totalHours}h
-                          {record.overtimeHours && record.overtimeHours > 0 && (
-                            <span className="text-orange-600 ml-1">
-                              (+{record.overtimeHours}h)
-                            </span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            {pagination.pages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} records
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={!pagination.hasPrev}
-                    className="flex items-center space-x-1"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                      let pageNum;
-                      if (pagination.pages <= 5) {
-                        pageNum = i + 1;
-                      } else if (pagination.page <= 3) {
-                        pageNum = i + 1;
-                      } else if (pagination.page >= pagination.pages - 2) {
-                        pageNum = pagination.pages - 4 + i;
-                      } else {
-                        pageNum = pagination.page - 2 + i;
-                      }
-                      
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={pagination.page === pageNum ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(pageNum)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={!pagination.hasNext}
-                    className="flex items-center space-x-1"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            <DynamicTable
+              data={attendance}
+              columns={attendanceColumns}
+              loading={loading}
+              emptyMessage="No attendance records found."
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              keyExtractor={(record) => record._id}
+              mobileCardRender={renderAttendanceMobileCard}
+            />
           </CardContent>
         </Card>
       </div>
