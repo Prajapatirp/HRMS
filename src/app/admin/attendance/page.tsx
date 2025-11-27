@@ -211,14 +211,14 @@ export default function AdminAttendancePage() {
   };
 
   const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev: any) => ({
       ...prev,
       [field]: value
     }));
   };
 
   const applyFilters = () => {
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchAttendance(1);
   };
 
@@ -681,7 +681,7 @@ export default function AdminAttendancePage() {
                     status: '',
                     limit: '10'
                   });
-                  setPagination(prev => ({ ...prev, page: 1 }));
+                  setPagination((prev: any) => ({ ...prev, page: 1 }));
                   setTimeout(() => fetchAttendance(1), 100);
                 }} 
                 variant="outline"

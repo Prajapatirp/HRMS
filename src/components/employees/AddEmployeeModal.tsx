@@ -108,18 +108,18 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
   const handleInputChange = (section: string, field: string, value: string) => {
     if (section === 'personalInfo' && field.includes('.')) {
       const [parent, child] = field.split('.');
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         personalInfo: {
           ...prev.personalInfo,
           [parent]: {
-            ...prev.personalInfo[parent as keyof typeof prev.personalInfo],
+            ...(prev.personalInfo[parent as keyof typeof prev.personalInfo] as Record<string, string> || {}),
             [child]: value,
           },
         },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         [section]: {
           ...prev[section as keyof typeof prev],

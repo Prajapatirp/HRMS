@@ -99,7 +99,7 @@ export default function AdminLeavesPage() {
   };
 
   const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev: any) => ({
       ...prev,
       [field]: value
     }));
