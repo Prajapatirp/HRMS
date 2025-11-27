@@ -138,7 +138,7 @@ export default function DynamicTable<T = any>({
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-3 sm:space-y-4 px-1">
         {data.map((record, index) => (
           <div key={keyExtractor(record, index)}>
             {renderMobileCard(record, index)}
