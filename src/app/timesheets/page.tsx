@@ -262,7 +262,7 @@ export default function TimesheetsPage() {
   // Initialize form with user data when component mounts
   useEffect(() => {
     if (user?.email) {
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         employeeName: user.email.split('@')[0] || '',
       }));

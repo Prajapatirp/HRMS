@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Plus, Search } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import AddEmployeeModal from '@/components/employees/AddEmployeeModal';
 import EmployeeDetailsModal from '@/components/employees/EmployeeDetailsModal';
-import EditEmployeeModal from '@/components/employees/EditEmployeeModal';
 
 interface Employee {
   _id: string;
@@ -32,21 +31,14 @@ interface Employee {
 
 export default function EmployeesPage() {
   const { user, token } = useAuth();
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  useEffect(() => {
-    if (token) {
-      fetchEmployees();
-    }
-  }, [token]);
-
-  const fetchEmployees = async () => {
+  const fetchEmployees = React.useCallback(async () => {
     try {
       const response = await fetch('/api/employees', {
         headers: {
@@ -63,7 +55,13 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchEmployees();
+    }
+  }, [token, fetchEmployees]);
 
   const filteredEmployees = employees.filter(employee =>
     employee.personalInfo.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,9 +70,6 @@ export default function EmployeesPage() {
     employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddEmployeeSuccess = () => {
-    fetchEmployees(); // Refresh the employee list
-  };
 
   const handleViewDetails = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -82,14 +77,7 @@ export default function EmployeesPage() {
   };
 
   const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsEditModalOpen(true);
-  };
-
-  const handleEditSuccess = () => {
-    fetchEmployees(); // Refresh the employee list
-    setIsEditModalOpen(false);
-    setSelectedEmployee(null);
+    router.push(`/employees/add?id=${employee.employeeId}`);
   };
 
   if (!user) {
@@ -116,7 +104,7 @@ export default function EmployeesPage() {
             <p className="text-gray-600">Manage your organization's employees</p>
           </div>
           <Button 
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => router.push('/employees/add')}
             className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Plus className="h-4 w-4" />
@@ -229,13 +217,6 @@ export default function EmployeesPage() {
           </Card>
         )}
 
-        {/* Add Employee Modal */}
-        <AddEmployeeModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onSuccess={handleAddEmployeeSuccess}
-        />
-
         {/* Employee Details Modal */}
         <EmployeeDetailsModal
           isOpen={isDetailsModalOpen}
@@ -246,19 +227,7 @@ export default function EmployeesPage() {
           employee={selectedEmployee}
           onEdit={() => {
             setIsDetailsModalOpen(false);
-            setIsEditModalOpen(true);
           }}
-        />
-
-        {/* Edit Employee Modal */}
-        <EditEmployeeModal
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedEmployee(null);
-          }}
-          employee={selectedEmployee}
-          onSuccess={handleEditSuccess}
         />
       </div>
     </Layout>

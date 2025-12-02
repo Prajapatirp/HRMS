@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { X, User, Mail, Phone, MapPin, Calendar, DollarSign, Building, Briefcase } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -48,22 +49,37 @@ interface EmployeeDetailsModalProps {
 }
 
 export default function EmployeeDetailsModal({ isOpen, onClose, employee, onEdit }: EmployeeDetailsModalProps) {
+  const router = useRouter();
+
+  const handleEdit = () => {
+    onClose();
+    router.push(`/employees/add?id=${employee.employeeId}`);
+  };
+
   if (!isOpen || !employee) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+    <div 
+      className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-all overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white flex-shrink-0 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-gray-900">Employee Details</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-8">
+        {/* Scrollable Content */}
+        <div className="p-6 space-y-8 bg-white overflow-y-auto flex-1">
           {/* Employee Header */}
           <div className="flex items-center space-x-6">
             <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
@@ -242,7 +258,7 @@ export default function EmployeeDetailsModal({ isOpen, onClose, employee, onEdit
               Close
             </button>
             <button
-              onClick={onEdit}
+              onClick={handleEdit}
               className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors"
             >
               Edit Employee
