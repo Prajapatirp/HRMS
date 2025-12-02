@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const employeeId = searchParams.get('employeeId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
     const query: any = {};
 
@@ -40,18 +42,39 @@ export async function GET(request: NextRequest) {
       query.projectId = projectId;
     }
 
-    if (startDate && endDate) {
-      query.timesheetDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
+    if (startDate || endDate) {
+      query.timesheetDate = {};
+      if (startDate) {
+        query.timesheetDate.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999); // Include the entire end date
+        query.timesheetDate.$lte = endDateTime;
+      }
     }
+
+    const skip = (page - 1) * limit;
 
     const timesheets = await Timesheet.find(query)
       .sort({ timesheetDate: -1, createdAt: -1 })
-      .limit(100);
+      .skip(skip)
+      .limit(limit);
 
-    return NextResponse.json({ timesheets });
+    const total = await Timesheet.countDocuments(query);
+    const pages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      timesheets,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages,
+        hasNext: page < pages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (error) {
     console.error('Error fetching timesheets:', error);
     return NextResponse.json(

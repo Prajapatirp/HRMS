@@ -8,8 +8,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
+import { Plus, Edit, Trash2, Filter, Calendar, User, Briefcase } from 'lucide-react';
 
 interface Project {
   _id: string;
@@ -33,14 +34,32 @@ interface Timesheet {
   rejectionReason?: string;
 }
 
+interface Employee {
+  _id: string;
+  employeeId: string;
+  personalInfo: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
 export default function TimesheetsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, token } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTimesheet, setEditingTimesheet] = useState<Timesheet | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -54,23 +73,22 @@ export default function TimesheetsPage() {
 
   // Filters
   const [filters, setFilters] = useState({
+    employeeId: '',
     projectId: '',
     startDate: '',
     endDate: '',
+    limit: '10',
   });
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && token) {
       fetchProjects();
-      fetchTimesheets();
+      if (user.role === 'admin' || user.role === 'hr') {
+        fetchEmployees();
+      }
+      fetchTimesheets(1);
     }
-  }, [authLoading, user]);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchTimesheets();
-    }
-  }, [filters, authLoading, user]);
+  }, [authLoading, user, token]);
 
   const fetchProjects = async () => {
     try {
@@ -97,10 +115,27 @@ export default function TimesheetsPage() {
     }
   };
 
-  const fetchTimesheets = async () => {
+  const fetchEmployees = async () => {
+    try {
+      if (!token) return;
+      const response = await fetch('/api/employees?limit=1000', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEmployees(data.employees || []);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const fetchTimesheets = async (page = 1) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       if (!token) {
         console.error('No token found');
         setLoading(false);
@@ -108,7 +143,10 @@ export default function TimesheetsPage() {
       }
       
       const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', filters.limit || '10');
       
+      if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
       if (filters.projectId) queryParams.append('projectId', filters.projectId);
       if (filters.startDate) queryParams.append('startDate', filters.startDate);
       if (filters.endDate) queryParams.append('endDate', filters.endDate);
@@ -122,6 +160,9 @@ export default function TimesheetsPage() {
       if (response.ok) {
         const data = await response.json();
         setTimesheets(data.timesheets || []);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       } else {
         console.error('Failed to fetch timesheets:', response.status, response.statusText);
         setTimesheets([]);
@@ -132,6 +173,36 @@ export default function TimesheetsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    fetchTimesheets(newPage);
+  };
+
+  const handleFilterChange = (field: string, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const applyFilters = () => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchTimesheets(1);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      employeeId: '',
+      projectId: '',
+      startDate: '',
+      endDate: '',
+      limit: '10',
+    };
+    setFilters(clearedFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    // Need to rebuild query params for cleared filters
+    setTimeout(() => fetchTimesheets(1), 100);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,7 +240,7 @@ export default function TimesheetsPage() {
         setShowForm(false);
         setEditingTimesheet(null);
         resetForm();
-        fetchTimesheets();
+        fetchTimesheets(pagination.page);
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to save timesheet');
@@ -213,7 +284,7 @@ export default function TimesheetsPage() {
       });
 
       if (response.ok) {
-        fetchTimesheets();
+        fetchTimesheets(pagination.page);
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to delete timesheet');
@@ -226,7 +297,7 @@ export default function TimesheetsPage() {
 
   const handleSubmitTimesheet = async (timesheetId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      if (!token) return;
       const response = await fetch(`/api/timesheets/${timesheetId}`, {
         method: 'PUT',
         headers: {
@@ -237,7 +308,7 @@ export default function TimesheetsPage() {
       });
 
       if (response.ok) {
-        fetchTimesheets();
+        fetchTimesheets(pagination.page);
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to submit timesheet');
@@ -277,6 +348,231 @@ export default function TimesheetsPage() {
       case 'rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Define columns for timesheet table
+  const timesheetColumns: Column<Timesheet>[] = [
+    {
+      key: 'timesheetDate',
+      label: 'Date',
+      minWidth: '120px',
+      render: (value) => (
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span>{new Date(value).toLocaleDateString()}</span>
+        </div>
+      ),
+      mobileLabel: 'Date',
+    },
+    ...((user?.role === 'admin' || user?.role === 'hr') ? [{
+      key: 'employeeName',
+      label: 'Employee',
+      minWidth: '150px',
+      render: (value: string) => (
+        <div className="flex items-center space-x-2">
+          <User className="h-4 w-4 text-gray-400" />
+          <span>{value}</span>
+        </div>
+      ),
+      mobileLabel: 'Employee',
+    } as Column<Timesheet>] : []),
+    {
+      key: 'projectName',
+      label: 'Project',
+      minWidth: '150px',
+      render: (value) => (
+        <div className="flex items-center space-x-2">
+          <Briefcase className="h-4 w-4 text-gray-400" />
+          <span>{value}</span>
+        </div>
+      ),
+      mobileLabel: 'Project',
+    },
+    {
+      key: 'hours',
+      label: 'Hours',
+      minWidth: '80px',
+      render: (value) => (
+        <span className="font-medium">{value}</span>
+      ),
+      mobileLabel: 'Hours',
+    },
+    {
+      key: 'taskDetails',
+      label: 'Task Details',
+      minWidth: '200px',
+      render: (value) => (
+        <div className="max-w-xs truncate" title={value}>
+          {value}
+        </div>
+      ),
+      mobileLabel: 'Task Details',
+      mobileRender: (value) => (
+        <div className="text-sm">{value}</div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '100px',
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(value)}`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      minWidth: '150px',
+      render: (_, record) => (
+        <div className="flex space-x-2">
+          {record.status === 'draft' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleEdit(record)}
+                className="flex items-center space-x-1"
+              >
+                <Edit className="h-3 w-3" />
+                <span>Edit</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleSubmitTimesheet(record._id)}
+              >
+                Submit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleDelete(record._id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </>
+          )}
+          {record.status === 'rejected' && record.rejectionReason && (
+            <div className="text-xs text-red-600 max-w-xs">
+              {record.rejectionReason}
+            </div>
+          )}
+        </div>
+      ),
+      mobileLabel: 'Actions',
+      mobileRender: (_, record) => (
+        <div className="flex flex-col space-y-2 pt-2">
+          {record.status === 'draft' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleEdit(record)}
+                className="w-full flex items-center justify-center space-x-1"
+              >
+                <Edit className="h-3 w-3" />
+                <span>Edit</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleSubmitTimesheet(record._id)}
+                className="w-full"
+              >
+                Submit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleDelete(record._id)}
+                className="w-full flex items-center justify-center"
+              >
+                <Trash2 className="h-3 w-3" />
+                <span>Delete</span>
+              </Button>
+            </>
+          )}
+          {record.status === 'rejected' && record.rejectionReason && (
+            <div className="text-xs text-red-600">
+              Rejected: {record.rejectionReason}
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // Custom mobile card render for timesheets
+  const renderTimesheetMobileCard = (record: Timesheet) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-semibold text-gray-900">
+              {new Date(record.timesheetDate).toLocaleDateString()}
+            </p>
+            {(user?.role === 'admin' || user?.role === 'hr') && (
+              <p className="text-sm text-gray-600">{record.employeeName}</p>
+            )}
+          </div>
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
+            {record.status}
+          </span>
+        </div>
+        
+        <div className="space-y-2 pt-3 border-t">
+          <div className="flex items-center space-x-2">
+            <Briefcase className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700">{record.projectName}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">{record.hours} hours</span>
+          </div>
+          <div className="pt-2">
+            <p className="text-xs text-gray-500 mb-1">Task Details:</p>
+            <p className="text-sm text-gray-700">{record.taskDetails}</p>
+          </div>
+        </div>
+        
+        {record.status === 'draft' && (
+          <div className="flex items-center space-x-2 pt-3 border-t mt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleEdit(record)}
+              className="flex-1 flex items-center justify-center space-x-1"
+            >
+              <Edit className="h-4 w-4" />
+              <span>Edit</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleSubmitTimesheet(record._id)}
+              className="flex-1"
+            >
+              Submit
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDelete(record._id)}
+              className="flex-1 flex items-center justify-center"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {record.status === 'rejected' && record.rejectionReason && (
+          <div className="pt-3 border-t mt-3">
+            <p className="text-xs text-red-600">Rejected: {record.rejectionReason}</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Show loading state while authentication is in progress
@@ -333,50 +629,97 @@ export default function TimesheetsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <Label htmlFor="projectFilter">Project</Label>
-            <Select
-              value={filters.projectId}
-              onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
-            >
-              <option value="">All Projects</option>
-              {projects.map((project) => (
-                <option key={project._id} value={project._id}>
-                  {project.name}
-                </option>
-              ))}
-            </Select>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Filter className="h-5 w-5" />
+            <span>Filters</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {(user?.role === 'admin' || user?.role === 'hr') && (
+              <div>
+                <Label htmlFor="employeeId">Employee</Label>
+                <Select
+                  id="employeeId"
+                  value={filters.employeeId}
+                  onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+                >
+                  <option value="">All Employees</option>
+                  {employees.map((emp) => (
+                    <option key={emp.employeeId} value={emp.employeeId}>
+                      {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="projectId">Project</Label>
+              <Select
+                id="projectId"
+                value={filters.projectId}
+                onChange={(e) => handleFilterChange('projectId', e.target.value)}
+              >
+                <option value="">All Projects</option>
+                {projects.map((project) => (
+                  <option key={project._id} value={project._id}>
+                    {project.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="limit">Records per page</Label>
+              <Select
+                id="limit"
+                value={filters.limit}
+                onChange={(e) => handleFilterChange('limit', e.target.value)}
+              >
+                <option value="5">5 records</option>
+                <option value="10">10 records</option>
+                <option value="20">20 records</option>
+                <option value="50">50 records</option>
+              </Select>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="startDate">Start Date</Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="endDate">End Date</Label>
-            <Input
-              id="endDate"
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={applyFilters} className="flex items-center space-x-2">
+              <Filter className="h-4 w-4" />
+              <span>Apply Filters</span>
+            </Button>
+            <Button 
+              onClick={clearFilters}
               variant="outline"
-              onClick={() => setFilters({ projectId: '', startDate: '', endDate: '' })}
-              className="w-full"
             >
               Clear Filters
             </Button>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
       {/* Timesheet Form */}
@@ -479,86 +822,21 @@ export default function TimesheetsPage() {
 
       {/* Timesheets Table */}
       <Card>
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold">Timesheet Entries</h2>
-        </div>
-        {loading ? (
-          <div className="p-8 text-center">Loading...</div>
-        ) : timesheets.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No timesheets found. Create your first timesheet entry.
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Task Details</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timesheets.map((timesheet) => (
-                <TableRow key={timesheet._id}>
-                  <TableCell>
-                    {new Date(timesheet.timesheetDate).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {timesheet.projectName}
-                  </TableCell>
-                  <TableCell>
-                    {timesheet.hours}
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {timesheet.taskDetails}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(timesheet.status)}`}>
-                      {timesheet.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      {timesheet.status === 'draft' && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(timesheet)}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleSubmitTimesheet(timesheet._id)}
-                          >
-                            Submit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(timesheet._id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </>
-                      )}
-                      {timesheet.status === 'rejected' && timesheet.rejectionReason && (
-                        <div className="text-xs text-red-600">
-                          {timesheet.rejectionReason}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <CardHeader>
+          <CardTitle>Timesheet Entries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DynamicTable
+            data={timesheets}
+            columns={timesheetColumns}
+            loading={loading}
+            emptyMessage="No timesheets found. Create your first timesheet entry."
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            keyExtractor={(record) => record._id}
+            mobileCardRender={renderTimesheetMobileCard}
+          />
+        </CardContent>
       </Card>
       </div>
     </Layout>
