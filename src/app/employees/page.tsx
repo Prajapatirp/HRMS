@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Plus, Search } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Plus, Filter, Eye, Edit, Mail, Phone, Building, Briefcase, Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import EmployeeDetailsModal from '@/components/employees/EmployeeDetailsModal';
+import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
 
 interface Employee {
   _id: string;
@@ -33,14 +36,51 @@ export default function EmployeesPage() {
   const { user, token } = useAuth();
   const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]); // For getting unique departments/designations
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
+  const [filters, setFilters] = useState({
+    employeeName: '',
+    department: '',
+    designation: '',
+    startDate: '',
+    endDate: '',
+    limit: '10',
+  });
 
-  const fetchEmployees = React.useCallback(async () => {
+  const fetchEmployees = useCallback(async (page = 1, currentFilters: typeof filters, currentUserEmployeeId?: string) => {
     try {
-      const response = await fetch('/api/employees', {
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', currentFilters.limit || '10');
+      
+      if (currentFilters.employeeName) {
+        queryParams.append('employeeName', currentFilters.employeeName);
+      }
+      if (currentFilters.department) {
+        queryParams.append('department', currentFilters.department);
+      }
+      if (currentFilters.designation) {
+        queryParams.append('designation', currentFilters.designation);
+      }
+      if (currentFilters.startDate) {
+        queryParams.append('startDate', currentFilters.startDate);
+      }
+      if (currentFilters.endDate) {
+        queryParams.append('endDate', currentFilters.endDate);
+      }
+
+      const response = await fetch(`/api/employees?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -48,7 +88,22 @@ export default function EmployeesPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setEmployees(data.employees);
+        // Filter out the current user from the employee list
+        const filteredEmployees = currentUserEmployeeId 
+          ? data.employees.filter((emp: Employee) => emp.employeeId !== currentUserEmployeeId)
+          : data.employees;
+        
+        setEmployees(filteredEmployees);
+        if (data.pagination) {
+          // Adjust pagination total if we filtered out the current user
+          const adjustedTotal = currentUserEmployeeId && filteredEmployees.length < data.employees.length
+            ? data.pagination.total - 1
+            : data.pagination.total;
+          setPagination({
+            ...data.pagination,
+            total: adjustedTotal,
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch employees:', error);
@@ -57,18 +112,68 @@ export default function EmployeesPage() {
     }
   }, [token]);
 
+  // Fetch all employees once to get unique departments and designations
+  const fetchAllEmployeesForFilters = useCallback(async () => {
+    try {
+      const response = await fetch('/api/employees?limit=1000', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Filter out current user
+        const filtered = user?.employeeId 
+          ? data.employees.filter((emp: Employee) => emp.employeeId !== user.employeeId)
+          : data.employees;
+        setAllEmployees(filtered);
+      }
+    } catch (error) {
+      console.error('Failed to fetch all employees:', error);
+    }
+  }, [token, user?.employeeId]);
+
   useEffect(() => {
     if (token) {
-      fetchEmployees();
+      fetchEmployees(1, filters, user?.employeeId);
+      fetchAllEmployeesForFilters();
     }
-  }, [token, fetchEmployees]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.employeeId]);
 
-  const filteredEmployees = employees.filter(employee =>
-    employee.personalInfo.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.personalInfo.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.personalInfo.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handlePageChange = (newPage: number) => {
+    fetchEmployees(newPage, filters, user?.employeeId);
+  };
+
+  const handleFilterChange = (field: string, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const applyFilters = () => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchEmployees(1, filters, user?.employeeId);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      employeeName: '',
+      department: '',
+      designation: '',
+      startDate: '',
+      endDate: '',
+      limit: '10',
+    };
+    setFilters(clearedFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchEmployees(1, clearedFilters, user?.employeeId);
+  };
+
+  // Get unique departments
+  const uniqueDepartments = Array.from(new Set(allEmployees.map(emp => emp.jobInfo.department))).sort();
 
 
   const handleViewDetails = (employee: Employee) => {
@@ -78,6 +183,282 @@ export default function EmployeesPage() {
 
   const handleEditEmployee = (employee: Employee) => {
     router.push(`/employees/add?id=${employee.employeeId}`);
+  };
+
+  const getStatusColor = (status: string) => {
+    return status === 'active' 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-red-100 text-red-800';
+  };
+
+  // Define columns for employee table
+  const employeeColumns: Column<Employee>[] = [
+    {
+      key: 'employeeId',
+      label: 'Employee ID',
+      minWidth: '120px',
+      render: (value) => (
+        <span className="font-medium text-blue-600">{value}</span>
+      ),
+      mobileLabel: 'Employee ID',
+    },
+    {
+      key: 'personalInfo',
+      label: 'Name',
+      minWidth: '180px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-medium">
+              {record.personalInfo.firstName.charAt(0)}
+              {record.personalInfo.lastName.charAt(0)}
+            </span>
+          </div>
+          <span className="font-medium">
+            {record.personalInfo.firstName} {record.personalInfo.lastName}
+          </span>
+        </div>
+      ),
+      mobileLabel: 'Employee',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-medium">
+              {record.personalInfo.firstName.charAt(0)}
+              {record.personalInfo.lastName.charAt(0)}
+            </span>
+          </div>
+          <div>
+            <span className="font-semibold text-gray-900 block">
+              {record.personalInfo.firstName} {record.personalInfo.lastName}
+            </span>
+            <span className="text-xs text-gray-500">{record.employeeId}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'personalInfo.email',
+      label: 'Email',
+      minWidth: '200px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Mail className="h-4 w-4 text-gray-400" />
+          <span className="text-sm">{record.personalInfo.email}</span>
+        </div>
+      ),
+      mobileLabel: 'Email',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Mail className="h-3 w-3 text-gray-400" />
+          <span className="text-sm">{record.personalInfo.email}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'personalInfo.phone',
+      label: 'Phone',
+      minWidth: '130px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Phone className="h-4 w-4 text-gray-400" />
+          <span className="text-sm">{record.personalInfo.phone}</span>
+        </div>
+      ),
+      mobileLabel: 'Phone',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Phone className="h-3 w-3 text-gray-400" />
+          <span className="text-sm">{record.personalInfo.phone}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'jobInfo.department',
+      label: 'Department',
+      minWidth: '120px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Building className="h-4 w-4 text-gray-400" />
+          <span className="text-sm capitalize">{record.jobInfo.department}</span>
+        </div>
+      ),
+      mobileLabel: 'Department',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Building className="h-3 w-3 text-gray-400" />
+          <span className="text-sm capitalize">{record.jobInfo.department}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'jobInfo.designation',
+      label: 'Designation',
+      minWidth: '150px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Briefcase className="h-4 w-4 text-gray-400" />
+          <span className="text-sm">{record.jobInfo.designation}</span>
+        </div>
+      ),
+      mobileLabel: 'Designation',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Briefcase className="h-3 w-3 text-gray-400" />
+          <span className="text-sm">{record.jobInfo.designation}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'jobInfo.joiningDate',
+      label: 'Joining Date',
+      minWidth: '120px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span className="text-sm">{formatDate(record.jobInfo.joiningDate)}</span>
+        </div>
+      ),
+      mobileLabel: 'Joining Date',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-3 w-3 text-gray-400" />
+          <span className="text-sm">{formatDate(record.jobInfo.joiningDate)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '100px',
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(value)}`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      minWidth: '150px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleViewDetails(record)}
+            className="flex items-center space-x-1"
+          >
+            <Eye className="h-4 w-4" />
+            <span>View</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEditEmployee(record)}
+            className="flex items-center space-x-1"
+          >
+            <Edit className="h-4 w-4" />
+            <span>Edit</span>
+          </Button>
+        </div>
+      ),
+      mobileLabel: 'Actions',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleViewDetails(record)}
+            className="flex-1 flex items-center justify-center space-x-1"
+          >
+            <Eye className="h-4 w-4" />
+            <span>View</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEditEmployee(record)}
+            className="flex-1 flex items-center justify-center space-x-1"
+          >
+            <Edit className="h-4 w-4" />
+            <span>Edit</span>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Custom mobile card render for employees
+  const renderEmployeeMobileCard = (record: Employee) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center space-x-3 flex-1">
+            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-medium">
+                {record.personalInfo.firstName.charAt(0)}
+                {record.personalInfo.lastName.charAt(0)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 truncate">
+                {record.personalInfo.firstName} {record.personalInfo.lastName}
+              </p>
+              <p className="text-xs text-gray-500">{record.employeeId}</p>
+            </div>
+          </div>
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
+            {record.status}
+          </span>
+        </div>
+        
+        <div className="space-y-2 pt-3 border-t">
+          <div className="flex items-center space-x-2">
+            <Mail className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700">{record.personalInfo.email}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Phone className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700">{record.personalInfo.phone}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Building className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700 capitalize">{record.jobInfo.department}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Briefcase className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700">{record.jobInfo.designation}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700">Joined: {formatDate(record.jobInfo.joiningDate)}</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2 pt-3 border-t mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleViewDetails(record)}
+            className="flex-1 flex items-center justify-center space-x-1"
+          >
+            <Eye className="h-4 w-4" />
+            <span>View</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEditEmployee(record)}
+            className="flex-1 flex items-center justify-center space-x-1"
+          >
+            <Edit className="h-4 w-4" />
+            <span>Edit</span>
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   if (!user) {
@@ -112,110 +493,128 @@ export default function EmployeesPage() {
           </Button>
         </div>
 
-        {/* Search and Filters */}
+        {/* Filters */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Filter className="h-5 w-5" />
+              <span>Filters</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              <div>
+                <Label htmlFor="employeeName">Employee Name</Label>
                 <Input
-                  placeholder="Search employees..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  id="employeeName"
+                  type="text"
+                  placeholder="Enter employee name"
+                  value={filters.employeeName}
+                  onChange={(e) => handleFilterChange('employeeName', e.target.value)}
                 />
               </div>
+
+              <div>
+                <Label htmlFor="department">Department</Label>
+                <Select
+                  id="department"
+                  value={filters.department}
+                  onChange={(e) => handleFilterChange('department', e.target.value)}
+                >
+                  <option value="">All Departments</option>
+                  {uniqueDepartments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept.charAt(0).toUpperCase() + dept.slice(1)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="designation">Designation</Label>
+                <Input
+                  id="designation"
+                  type="text"
+                  placeholder="Enter designation"
+                  value={filters.designation}
+                  onChange={(e) => handleFilterChange('designation', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="limit">Records per page</Label>
+                <Select
+                  id="limit"
+                  value={filters.limit}
+                  onChange={(e) => handleFilterChange('limit', e.target.value)}
+                >
+                  <option value="5">5 records</option>
+                  <option value="10">10 records</option>
+                  <option value="20">20 records</option>
+                  <option value="50">50 records</option>
+                </Select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button onClick={applyFilters} className="flex items-center space-x-2">
+                <Filter className="h-4 w-4" />
+                <span>Apply Filters</span>
+              </Button>
+              <Button 
+                onClick={clearFilters}
+                variant="outline"
+              >
+                Clear Filters
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Employees Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEmployees.map((employee) => (
-              <Card key={employee._id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-medium">
-                        {employee.personalInfo.firstName.charAt(0)}
-                        {employee.personalInfo.lastName.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">
-                        {employee.personalInfo.firstName} {employee.personalInfo.lastName}
-                      </CardTitle>
-                      <CardDescription>{employee.employeeId}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Department:</span>
-                      <span className="text-sm font-medium">{employee.jobInfo.department}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Designation:</span>
-                      <span className="text-sm font-medium">{employee.jobInfo.designation}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Joining Date:</span>
-                      <span className="text-sm font-medium">{formatDate(employee.jobInfo.joiningDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Status:</span>
-                      <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                        employee.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {employee.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleViewDetails(employee)}
-                    >
-                      View Details
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleEditEmployee(employee)}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {filteredEmployees.length === 0 && !loading && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No employees found</h3>
-                <p className="text-gray-600">
-                  {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first employee.'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Employees Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Employees</CardTitle>
+            {/* <CardDescription>
+              Showing {employees.length} of {pagination.total} employees
+              {pagination.total > 0 && (
+                <span> (Page {pagination.page} of {pagination.pages})</span>
+              )}
+            </CardDescription> */}
+          </CardHeader>
+          <CardContent>
+            <DynamicTable
+              data={employees}
+              columns={employeeColumns}
+              loading={loading}
+              emptyMessage="No employees found. Get started by adding your first employee."
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              keyExtractor={(record) => record._id}
+              mobileCardRender={renderEmployeeMobileCard}
+            />
+          </CardContent>
+        </Card>
 
         {/* Employee Details Modal */}
         <EmployeeDetailsModal
