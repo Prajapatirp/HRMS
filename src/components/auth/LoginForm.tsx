@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff } from 'lucide-react';
@@ -16,6 +17,7 @@ const validationSchema = Yup.object({
 });
 
 export default function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -123,6 +125,16 @@ export default function LoginForm() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+        
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={() => router.push('/forgot-password')}
+            className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
         
         {/* <div className="mt-6 text-center text-sm text-gray-600">
           <p>Default Admin Credentials:</p>

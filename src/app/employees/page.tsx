@@ -528,7 +528,7 @@ export default function EmployeesPage() {
                     </option>
                   ))}
                 </Select>
-              </div>
+            </div>
 
               <div>
                 <Label htmlFor="designation">Designation</Label>
@@ -539,7 +539,7 @@ export default function EmployeesPage() {
                   value={filters.designation}
                   onChange={(e) => handleFilterChange('designation', e.target.value)}
                 />
-              </div>
+          </div>
 
               <div>
                 <Label htmlFor="startDate">Start Date</Label>
@@ -549,9 +549,9 @@ export default function EmployeesPage() {
                   value={filters.startDate}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
                 />
-              </div>
+                    </div>
 
-              <div>
+                    <div>
                 <Label htmlFor="endDate">End Date</Label>
                 <Input
                   id="endDate"
@@ -559,7 +559,7 @@ export default function EmployeesPage() {
                   value={filters.endDate}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
                 />
-              </div>
+                    </div>
 
               <div>
                 <Label htmlFor="limit">Records per page</Label>
@@ -573,26 +573,26 @@ export default function EmployeesPage() {
                   <option value="20">20 records</option>
                   <option value="50">50 records</option>
                 </Select>
-              </div>
-            </div>
+                    </div>
+                  </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={applyFilters} className="flex items-center space-x-2">
                 <Filter className="h-4 w-4" />
                 <span>Apply Filters</span>
-              </Button>
-              <Button 
+                    </Button>
+                    <Button 
                 onClick={clearFilters}
-                variant="outline"
-              >
+                      variant="outline" 
+                    >
                 Clear Filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
         {/* Employees Table */}
-        <Card>
+          <Card>
           <CardHeader>
             <CardTitle>Employees</CardTitle>
             {/* <CardDescription>
@@ -613,8 +613,8 @@ export default function EmployeesPage() {
               keyExtractor={(record) => record._id}
               mobileCardRender={renderEmployeeMobileCard}
             />
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         {/* Employee Details Modal */}
         <EmployeeDetailsModal
