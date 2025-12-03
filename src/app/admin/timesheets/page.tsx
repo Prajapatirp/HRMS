@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
+import DynamicModal from '@/components/ui/dynamic-modal';
 import { Check, X, Eye, Clock, FileText, Filter, Calendar, User, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -720,121 +721,116 @@ export default function AdminTimesheetsPage() {
       </Card>
 
       {/* Timesheet Details Modal */}
-      {showDetails && selectedTimesheet && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Timesheet Details</h2>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowDetails(false);
-                    setSelectedTimesheet(null);
-                    setRejectionReason('');
-                  }}
-                >
-                  Close
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Employee</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.employeeName}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Date</Label>
-                    <p className="text-sm text-gray-900">
-                      {new Date(selectedTimesheet.timesheetDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Project</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.projectName}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Hours</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.hours}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Task Details</Label>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                    {selectedTimesheet.taskDetails}
-                  </p>
-                </div>
-                
-                {selectedTimesheet.planForTomorrow && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Plan For Tomorrow</Label>
-                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                      {selectedTimesheet.planForTomorrow}
-                    </p>
-                  </div>
-                )}
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
-                  <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedTimesheet.status)}`}>
-                    {getStatusIcon(selectedTimesheet.status)}
-                    <span className="ml-1">{selectedTimesheet.status}</span>
-                  </span>
-                </div>
-                
-                {selectedTimesheet.rejectionReason && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
-                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                      {selectedTimesheet.rejectionReason}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {selectedTimesheet.status === 'submitted' && (
-                <div className="mt-6 pt-4 border-t">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="rejectionReason">Rejection Reason (Optional)</Label>
-                      <textarea
-                        id="rejectionReason"
-                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={3}
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        placeholder="Provide a reason for rejection (optional)..."
-                      />
-                      <p className="text-xs text-gray-500 mt-1">You can reject without providing a reason</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleApprove(selectedTimesheet._id)}
-                        disabled={processing === selectedTimesheet._id}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleReject(selectedTimesheet._id)}
-                        disabled={processing === selectedTimesheet._id}
-                        className="text-red-600 border-red-600 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+      <DynamicModal
+        isOpen={showDetails}
+        onClose={() => {
+          setShowDetails(false);
+          setSelectedTimesheet(null);
+          setRejectionReason('');
+        }}
+        title="Timesheet Details"
+        maxWidth="max-w-2xl"
+        footer={
+          selectedTimesheet?.status === 'submitted' ? (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => selectedTimesheet && handleApprove(selectedTimesheet._id)}
+                disabled={processing === selectedTimesheet?._id}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => selectedTimesheet && handleReject(selectedTimesheet._id)}
+                disabled={processing === selectedTimesheet?._id}
+                className="text-red-600 border-red-600 hover:bg-red-50"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Reject
+              </Button>
             </div>
-          </Card>
-        </div>
-      )}
+          ) : undefined
+        }
+      >
+        {selectedTimesheet && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Employee</Label>
+                <p className="text-sm text-gray-900 mt-1">{selectedTimesheet.employeeName}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Date</Label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {new Date(selectedTimesheet.timesheetDate).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Project</Label>
+                <p className="text-sm text-gray-900 mt-1">{selectedTimesheet.projectName}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Hours</Label>
+                <p className="text-sm text-gray-900 mt-1">{selectedTimesheet.hours}</p>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Task Details</Label>
+              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md mt-1">
+                {selectedTimesheet.taskDetails}
+              </p>
+            </div>
+            
+            {selectedTimesheet.planForTomorrow && (
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Plan For Tomorrow</Label>
+                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md mt-1">
+                  {selectedTimesheet.planForTomorrow}
+                </p>
+              </div>
+            )}
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Status</Label>
+              <div className="mt-1">
+                <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedTimesheet.status)}`}>
+                  {getStatusIcon(selectedTimesheet.status)}
+                  <span className="ml-1">{selectedTimesheet.status}</span>
+                </span>
+              </div>
+            </div>
+            
+            {selectedTimesheet.rejectionReason && (
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md mt-1">
+                  {selectedTimesheet.rejectionReason}
+                </p>
+              </div>
+            )}
+            
+            {selectedTimesheet.status === 'submitted' && (
+              <div className="pt-4 border-t border-gray-200">
+                <div>
+                  <Label htmlFor="rejectionReason">Rejection Reason (Optional)</Label>
+                  <textarea
+                    id="rejectionReason"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-1"
+                    rows={3}
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Provide a reason for rejection (optional)..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">You can reject without providing a reason</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </DynamicModal>
       </div>
     </Layout>
   );

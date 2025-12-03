@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, User, Mail, Phone, MapPin, Calendar, DollarSign, Building, Briefcase, Clock, Filter } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, DollarSign, Building, Briefcase, Clock, Filter } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
+import DynamicModal from '@/components/ui/dynamic-modal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -353,27 +354,29 @@ export default function EmployeeDetailsModal({ isOpen, onClose, employee, onEdit
   if (!isOpen || !employee) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity"
-      onClick={onClose}
-    >
-      <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-all overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Fixed Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white flex-shrink-0 rounded-t-2xl">
-          <h2 className="text-2xl font-bold text-gray-900">Employee Details</h2>
-          <button
+    <DynamicModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Employee Details"
+      maxWidth="max-w-4xl"
+      footer={
+        <div className="flex justify-end space-x-4">
+          <Button
+            variant="outline"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
           >
-            <X className="h-5 w-5" />
-          </button>
+            Close
+          </Button>
+          <Button
+            onClick={handleEdit}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Edit Employee
+          </Button>
         </div>
-
-        {/* Scrollable Content */}
-        <div className="p-6 space-y-8 bg-white overflow-y-auto flex-1">
+      }
+    >
+      <div className="space-y-8">
           {/* Employee Header */}
           <div className="flex items-center space-x-6">
             <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
@@ -663,23 +666,7 @@ export default function EmployeeDetailsModal({ isOpen, onClose, employee, onEdit
             </Card>
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={handleEdit}
-              className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors"
-            >
-              Edit Employee
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </DynamicModal>
   );
 }
