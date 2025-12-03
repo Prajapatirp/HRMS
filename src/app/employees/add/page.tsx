@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -88,7 +88,7 @@ const validationSchema = Yup.object({
   }),
 });
 
-export default function AddEmployeePage() {
+function AddEmployeePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const employeeId = searchParams.get('id');
@@ -749,6 +749,23 @@ export default function AddEmployeePage() {
         </Card>
       </div>
     </Layout>
+  );
+}
+
+export default function AddEmployeePage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    }>
+      <AddEmployeePageContent />
+    </Suspense>
   );
 }
 
