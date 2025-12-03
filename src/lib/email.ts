@@ -16,7 +16,7 @@ secure: false,
 export const sendResetPasswordEmail = async (email: string, resetToken: string) => {
   // URL encode the token to ensure it's properly formatted in the email link
   const encodedToken = encodeURIComponent(resetToken);
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${encodedToken}`;
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://dmhrms.vercel.app'}/reset-password?token=${encodedToken}`;
   
   console.log('Sending reset email to:', email);
   console.log('Reset token (first 20 chars):', resetToken.substring(0, 20));
