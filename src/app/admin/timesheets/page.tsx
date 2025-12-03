@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,11 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Check, X, Eye, Clock, FileText } from 'lucide-react';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
+import DynamicModal from '@/components/ui/dynamic-modal';
+import { Check, X, Eye, Clock, FileText, Filter, Calendar, User, Briefcase } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Project {
   _id: string;
@@ -46,6 +49,7 @@ interface Timesheet {
 }
 
 export default function AdminTimesheetsPage() {
+  const { token } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -54,6 +58,14 @@ export default function AdminTimesheetsPage() {
   const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   
   // Filters
   const [filters, setFilters] = useState({
@@ -62,21 +74,21 @@ export default function AdminTimesheetsPage() {
     startDate: '',
     endDate: '',
     status: '',
+    limit: '10',
   });
 
   useEffect(() => {
-    fetchProjects();
-    fetchEmployees();
-    fetchTimesheets();
-  }, []);
+    if (token) {
+      fetchProjects();
+      fetchEmployees();
+      fetchTimesheets(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
-  useEffect(() => {
-    fetchTimesheets();
-  }, [filters]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      if (!token) return;
       const response = await fetch('/api/projects', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -85,17 +97,17 @@ export default function AdminTimesheetsPage() {
       
       if (response.ok) {
         const data = await response.json();
-        setProjects(data.projects);
+        setProjects(data.projects || []);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
     }
-  };
+  }, [token]);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/employees', {
+      if (!token) return;
+      const response = await fetch('/api/employees?limit=1000', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -103,18 +115,21 @@ export default function AdminTimesheetsPage() {
       
       if (response.ok) {
         const data = await response.json();
-        setEmployees(data.employees);
+        setEmployees(data.employees || []);
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
     }
-  };
+  }, [token]);
 
-  const fetchTimesheets = async () => {
+  const fetchTimesheets = async (page = 1) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      if (!token) return;
+      
       const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', filters.limit || '10');
       
       if (filters.projectId) queryParams.append('projectId', filters.projectId);
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
@@ -129,7 +144,7 @@ export default function AdminTimesheetsPage() {
       
       if (response.ok) {
         const data = await response.json();
-        let filteredTimesheets = data.timesheets;
+        let filteredTimesheets = data.timesheets || [];
         
         // Filter by status on frontend since it's not in the API yet
         if (filters.status) {
@@ -137,6 +152,22 @@ export default function AdminTimesheetsPage() {
         }
         
         setTimesheets(filteredTimesheets);
+        if (data.pagination) {
+          // Adjust pagination if status filter is applied
+          if (filters.status) {
+            const totalFiltered = filteredTimesheets.length;
+            const pages = Math.ceil(totalFiltered / parseInt(filters.limit || '10'));
+            setPagination({
+              ...data.pagination,
+              total: totalFiltered,
+              pages: pages,
+              hasNext: page < pages,
+              hasPrev: page > 1,
+            });
+          } else {
+            setPagination(data.pagination);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching timesheets:', error);
@@ -145,10 +176,40 @@ export default function AdminTimesheetsPage() {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    fetchTimesheets(newPage);
+  };
+
+  const handleFilterChange = (field: string, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const applyFilters = () => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchTimesheets(1);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      projectId: '',
+      employeeId: '',
+      startDate: '',
+      endDate: '',
+      status: '',
+      limit: '10',
+    };
+    setFilters(clearedFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setTimeout(() => fetchTimesheets(1), 100);
+  };
+
   const handleApprove = async (timesheetId: string) => {
     setProcessing(timesheetId);
     try {
-      const token = localStorage.getItem('token');
+      if (!token) return;
       const response = await fetch(`/api/timesheets/${timesheetId}`, {
         method: 'PUT',
         headers: {
@@ -159,7 +220,7 @@ export default function AdminTimesheetsPage() {
       });
 
       if (response.ok) {
-        fetchTimesheets();
+        fetchTimesheets(pagination.page);
         setShowDetails(false);
         setSelectedTimesheet(null);
       } else {
@@ -175,14 +236,9 @@ export default function AdminTimesheetsPage() {
   };
 
   const handleReject = async (timesheetId: string) => {
-    if (!rejectionReason.trim()) {
-      alert('Please provide a reason for rejection');
-      return;
-    }
-
     setProcessing(timesheetId);
     try {
-      const token = localStorage.getItem('token');
+      if (!token) return;
       const response = await fetch(`/api/timesheets/${timesheetId}`, {
         method: 'PUT',
         headers: {
@@ -191,12 +247,12 @@ export default function AdminTimesheetsPage() {
         },
         body: JSON.stringify({ 
           status: 'rejected',
-          rejectionReason: rejectionReason.trim()
+          rejectionReason: rejectionReason.trim() || undefined // Optional rejection reason
         }),
       });
 
       if (response.ok) {
-        fetchTimesheets();
+        fetchTimesheets(pagination.page);
         setShowDetails(false);
         setSelectedTimesheet(null);
         setRejectionReason('');
@@ -237,12 +293,248 @@ export default function AdminTimesheetsPage() {
     }
   };
 
-  // Calculate statistics
+  // Calculate statistics - Note: These are based on current page, consider fetching all for accurate stats
   const stats = {
-    total: timesheets.length,
+    total: pagination.total || timesheets.length,
     submitted: timesheets.filter(t => t.status === 'submitted').length,
     approved: timesheets.filter(t => t.status === 'approved').length,
     rejected: timesheets.filter(t => t.status === 'rejected').length,
+  };
+
+  // Define columns for timesheet table
+  const timesheetColumns: Column<Timesheet>[] = [
+    {
+      key: 'employeeName',
+      label: 'Employee',
+      minWidth: '150px',
+      render: (value) => (
+        <div className="flex items-center space-x-2">
+          <User className="h-4 w-4 text-gray-400" />
+          <span>{value}</span>
+        </div>
+      ),
+      mobileLabel: 'Employee',
+    },
+    {
+      key: 'timesheetDate',
+      label: 'Date',
+      minWidth: '120px',
+      render: (value) => (
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span>{new Date(value).toLocaleDateString()}</span>
+        </div>
+      ),
+      mobileLabel: 'Date',
+    },
+    {
+      key: 'projectName',
+      label: 'Project',
+      minWidth: '150px',
+      render: (value) => (
+        <div className="flex items-center space-x-2">
+          <Briefcase className="h-4 w-4 text-gray-400" />
+          <span>{value}</span>
+        </div>
+      ),
+      mobileLabel: 'Project',
+    },
+    {
+      key: 'hours',
+      label: 'Hours',
+      minWidth: '80px',
+      render: (value) => (
+        <span className="font-medium">{value}</span>
+      ),
+      mobileLabel: 'Hours',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '120px',
+      render: (value) => (
+        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(value)}`}>
+          {getStatusIcon(value)}
+          <span className="ml-1">{value}</span>
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'submittedAt',
+      label: 'Submitted',
+      minWidth: '120px',
+      render: (value) => (
+        value 
+          ? new Date(value).toLocaleDateString()
+          : '-'
+      ),
+      mobileLabel: 'Submitted',
+      hideOnMobile: true,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      minWidth: '150px',
+      render: (_, record) => (
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleViewDetails(record)}
+            className="flex items-center space-x-1"
+          >
+            <Eye className="h-3 w-3" />
+            <span>View</span>
+          </Button>
+          {record.status === 'submitted' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleApprove(record._id)}
+                disabled={processing === record._id}
+                className="text-green-600 hover:text-green-700 flex items-center space-x-1"
+              >
+                <Check className="h-3 w-3" />
+                <span>Approve</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleViewDetails(record)}
+                disabled={processing === record._id}
+                className="text-red-600 hover:text-red-700 flex items-center space-x-1"
+              >
+                <X className="h-3 w-3" />
+                <span>Reject</span>
+              </Button>
+            </>
+          )}
+        </div>
+      ),
+      mobileLabel: 'Actions',
+      mobileRender: (_, record) => (
+        <div className="flex flex-col space-y-2 pt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleViewDetails(record)}
+            className="w-full flex items-center justify-center space-x-1"
+          >
+            <Eye className="h-3 w-3" />
+            <span>View</span>
+          </Button>
+          {record.status === 'submitted' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleApprove(record._id)}
+                disabled={processing === record._id}
+                className="w-full text-green-600 hover:text-green-700 flex items-center justify-center space-x-1"
+              >
+                <Check className="h-3 w-3" />
+                <span>Approve</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleViewDetails(record)}
+                disabled={processing === record._id}
+                className="w-full text-red-600 hover:text-red-700 flex items-center justify-center space-x-1"
+              >
+                <X className="h-3 w-3" />
+                <span>Reject</span>
+              </Button>
+            </>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // Custom mobile card render for timesheets
+  const renderTimesheetMobileCard = (record: Timesheet) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-semibold text-gray-900">{record.employeeName}</p>
+            <p className="text-sm text-gray-600">
+              {new Date(record.timesheetDate).toLocaleDateString()}
+            </p>
+          </div>
+          <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
+            {getStatusIcon(record.status)}
+            <span className="ml-1">{record.status}</span>
+          </span>
+        </div>
+        
+        <div className="space-y-2 pt-3 border-t">
+          <div className="flex items-center space-x-2">
+            <Briefcase className="h-3 w-3 text-gray-400" />
+            <span className="text-sm text-gray-700">{record.projectName}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">{record.hours} hours</span>
+          </div>
+          {record.submittedAt && (
+            <div className="flex items-center space-x-2">
+              <Clock className="h-3 w-3 text-gray-400" />
+              <span className="text-sm text-gray-700">
+                Submitted: {new Date(record.submittedAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+          <div className="pt-2">
+            <p className="text-xs text-gray-500 mb-1">Task Details:</p>
+            <p className="text-sm text-gray-700">{record.taskDetails}</p>
+          </div>
+          {record.rejectionReason && (
+            <div className="pt-2">
+              <p className="text-xs text-red-600">Rejected: {record.rejectionReason}</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center space-x-2 pt-3 border-t mt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleViewDetails(record)}
+            className="flex-1 flex items-center justify-center space-x-1"
+          >
+            <Eye className="h-4 w-4" />
+            <span>View</span>
+          </Button>
+          {record.status === 'submitted' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleApprove(record._id)}
+                disabled={processing === record._id}
+                className="flex-1 text-green-600 hover:text-green-700 flex items-center justify-center space-x-1"
+              >
+                <Check className="h-4 w-4" />
+                <span>Approve</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleViewDetails(record)}
+                disabled={processing === record._id}
+                className="flex-1 text-red-600 hover:text-red-700 flex items-center justify-center space-x-1"
+              >
+                <X className="h-4 w-4" />
+                <span>Reject</span>
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -304,283 +596,241 @@ export default function AdminTimesheetsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
-            <Label htmlFor="projectFilter">Project</Label>
-            <Select
-              value={filters.projectId}
-              onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Filter className="h-5 w-5" />
+            <span>Filters</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div>
+              <Label htmlFor="employeeFilter">Employee</Label>
+              <Select
+                id="employeeFilter"
+                value={filters.employeeId}
+                onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+              >
+                <option value="">All Employees</option>
+                {employees.map((employee) => (
+                  <option key={employee._id} value={employee.employeeId}>
+                    {employee.personalInfo.firstName} {employee.personalInfo.lastName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="projectFilter">Project</Label>
+              <Select
+                id="projectFilter"
+                value={filters.projectId}
+                onChange={(e) => handleFilterChange('projectId', e.target.value)}
+              >
+                <option value="">All Projects</option>
+                {projects.map((project) => (
+                  <option key={project._id} value={project._id}>
+                    {project.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="statusFilter">Status</Label>
+              <Select
+                id="statusFilter"
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+              >
+                <option value="">All Status</option>
+                <option value="submitted">Submitted</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="limitFilter">Records per page</Label>
+              <Select
+                id="limitFilter"
+                value={filters.limit}
+                onChange={(e) => handleFilterChange('limit', e.target.value)}
+              >
+                <option value="5">5 records</option>
+                <option value="10">10 records</option>
+                <option value="20">20 records</option>
+                <option value="50">50 records</option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={applyFilters} className="flex items-center space-x-2">
+              <Filter className="h-4 w-4" />
+              <span>Apply Filters</span>
+            </Button>
+            <Button 
+              onClick={clearFilters}
+              variant="outline"
             >
-              <option value="">All Projects</option>
-              {projects.map((project) => (
-                <option key={project._id} value={project._id}>
-                  {project.name}
-                </option>
-              ))}
-            </Select>
+              Clear Filters
+            </Button>
           </div>
-          <div>
-            <Label htmlFor="employeeFilter">Employee</Label>
-            <Select
-              value={filters.employeeId}
-              onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
-            >
-              <option value="">All Employees</option>
-              {employees.map((employee) => (
-                <option key={employee._id} value={employee.employeeId}>
-                  {employee.personalInfo.firstName} {employee.personalInfo.lastName}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="startDate">Start Date</Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="endDate">End Date</Label>
-            <Input
-              id="endDate"
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="statusFilter">Status</Label>
-            <Select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            >
-              <option value="">All Status</option>
-              <option value="submitted">Submitted</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </Select>
-          </div>
-        </div>
-        <div className="mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setFilters({ projectId: '', employeeId: '', startDate: '', endDate: '', status: '' })}
-          >
-            Clear Filters
-          </Button>
-        </div>
+        </CardContent>
       </Card>
 
       {/* Timesheets Table */}
       <Card>
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold">Timesheet Entries</h2>
-        </div>
-        {loading ? (
-          <div className="p-8 text-center">Loading...</div>
-        ) : timesheets.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No timesheets found matching the current filters.
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timesheets.map((timesheet) => (
-                <TableRow key={timesheet._id}>
-                  <TableCell>
-                    {timesheet.employeeName}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(timesheet.timesheetDate).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {timesheet.projectName}
-                  </TableCell>
-                  <TableCell>
-                    {timesheet.hours}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(timesheet.status)}`}>
-                      {getStatusIcon(timesheet.status)}
-                      <span className="ml-1">{timesheet.status}</span>
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {timesheet.submittedAt 
-                      ? new Date(timesheet.submittedAt).toLocaleDateString()
-                      : '-'
-                    }
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewDetails(timesheet)}
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      {timesheet.status === 'submitted' && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleApprove(timesheet._id)}
-                            disabled={processing === timesheet._id}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <Check className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleViewDetails(timesheet)}
-                            disabled={processing === timesheet._id}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <CardHeader>
+          <CardTitle>Timesheet Entries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DynamicTable
+            data={timesheets}
+            columns={timesheetColumns}
+            loading={loading}
+            emptyMessage="No timesheets found matching the current filters."
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            keyExtractor={(record) => record._id}
+            mobileCardRender={renderTimesheetMobileCard}
+          />
+        </CardContent>
       </Card>
 
       {/* Timesheet Details Modal */}
-      {showDetails && selectedTimesheet && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Timesheet Details</h2>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowDetails(false);
-                    setSelectedTimesheet(null);
-                    setRejectionReason('');
-                  }}
-                >
-                  Close
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Employee</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.employeeName}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Date</Label>
-                    <p className="text-sm text-gray-900">
-                      {new Date(selectedTimesheet.timesheetDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Project</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.projectName}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Hours</Label>
-                    <p className="text-sm text-gray-900">{selectedTimesheet.hours}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Task Details</Label>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                    {selectedTimesheet.taskDetails}
-                  </p>
-                </div>
-                
-                {selectedTimesheet.planForTomorrow && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Plan For Tomorrow</Label>
-                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                      {selectedTimesheet.planForTomorrow}
-                    </p>
-                  </div>
-                )}
-                
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
-                  <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedTimesheet.status)}`}>
-                    {getStatusIcon(selectedTimesheet.status)}
-                    <span className="ml-1">{selectedTimesheet.status}</span>
-                  </span>
-                </div>
-                
-                {selectedTimesheet.rejectionReason && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
-                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                      {selectedTimesheet.rejectionReason}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {selectedTimesheet.status === 'submitted' && (
-                <div className="mt-6 pt-4 border-t">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="rejectionReason">Rejection Reason (if rejecting)</Label>
-                      <textarea
-                        id="rejectionReason"
-                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={3}
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        placeholder="Provide a reason for rejection..."
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleApprove(selectedTimesheet._id)}
-                        disabled={processing === selectedTimesheet._id}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleReject(selectedTimesheet._id)}
-                        disabled={processing === selectedTimesheet._id}
-                        className="text-red-600 border-red-600 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+      <DynamicModal
+        isOpen={showDetails}
+        onClose={() => {
+          setShowDetails(false);
+          setSelectedTimesheet(null);
+          setRejectionReason('');
+        }}
+        title="Timesheet Details"
+        maxWidth="max-w-2xl"
+        footer={
+          selectedTimesheet?.status === 'submitted' ? (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => selectedTimesheet && handleApprove(selectedTimesheet._id)}
+                disabled={processing === selectedTimesheet?._id}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => selectedTimesheet && handleReject(selectedTimesheet._id)}
+                disabled={processing === selectedTimesheet?._id}
+                className="text-red-600 border-red-600 hover:bg-red-50"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Reject
+              </Button>
             </div>
-          </Card>
-        </div>
-      )}
+          ) : undefined
+        }
+      >
+        {selectedTimesheet && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Employee</Label>
+                <p className="text-sm text-gray-900 mt-1">{selectedTimesheet.employeeName}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Date</Label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {new Date(selectedTimesheet.timesheetDate).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Project</Label>
+                <p className="text-sm text-gray-900 mt-1">{selectedTimesheet.projectName}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Hours</Label>
+                <p className="text-sm text-gray-900 mt-1">{selectedTimesheet.hours}</p>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Task Details</Label>
+              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md mt-1">
+                {selectedTimesheet.taskDetails}
+              </p>
+            </div>
+            
+            {selectedTimesheet.planForTomorrow && (
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Plan For Tomorrow</Label>
+                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md mt-1">
+                  {selectedTimesheet.planForTomorrow}
+                </p>
+              </div>
+            )}
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Status</Label>
+              <div className="mt-1">
+                <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedTimesheet.status)}`}>
+                  {getStatusIcon(selectedTimesheet.status)}
+                  <span className="ml-1">{selectedTimesheet.status}</span>
+                </span>
+              </div>
+            </div>
+            
+            {selectedTimesheet.rejectionReason && (
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md mt-1">
+                  {selectedTimesheet.rejectionReason}
+                </p>
+              </div>
+            )}
+            
+            {selectedTimesheet.status === 'submitted' && (
+              <div className="pt-4 border-t border-gray-200">
+                <div>
+                  <Label htmlFor="rejectionReason">Rejection Reason (Optional)</Label>
+                  <textarea
+                    id="rejectionReason"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-1"
+                    rows={3}
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Provide a reason for rejection (optional)..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">You can reject without providing a reason</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </DynamicModal>
       </div>
     </Layout>
   );

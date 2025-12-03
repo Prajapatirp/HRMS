@@ -47,13 +47,13 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
             )}
           </Button>
           
-          <div className="relative hidden sm:block">
+          {/* <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search employees, departments..."
               className="pl-10 w-64 lg:w-80"
             />
-          </div>
+          </div> */}
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">

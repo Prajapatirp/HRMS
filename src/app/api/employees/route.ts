@@ -13,8 +13,11 @@ async function getEmployees(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const department = searchParams.get('department');
+    const designation = searchParams.get('designation');
     const status = searchParams.get('status');
-    const search = searchParams.get('search');
+    const employeeName = searchParams.get('employeeName');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     const query: any = {};
     
@@ -22,17 +25,40 @@ async function getEmployees(req: NextRequest) {
       query['jobInfo.department'] = department;
     }
     
+    if (designation) {
+      query['jobInfo.designation'] = { $regex: designation, $options: 'i' };
+    }
+    
     if (status) {
       query.status = status;
     }
     
-    if (search) {
+    if (employeeName) {
       query.$or = [
-        { 'personalInfo.firstName': { $regex: search, $options: 'i' } },
-        { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
-        { 'personalInfo.email': { $regex: search, $options: 'i' } },
-        { employeeId: { $regex: search, $options: 'i' } },
+        { 'personalInfo.firstName': { $regex: employeeName, $options: 'i' } },
+        { 'personalInfo.lastName': { $regex: employeeName, $options: 'i' } },
+        { 
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ['$personalInfo.firstName', ' ', '$personalInfo.lastName'] },
+              regex: employeeName,
+              options: 'i'
+            }
+          }
+        },
       ];
+    }
+    
+    if (startDate || endDate) {
+      query['jobInfo.joiningDate'] = {};
+      if (startDate) {
+        query['jobInfo.joiningDate'].$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999); // Include the entire end date
+        query['jobInfo.joiningDate'].$lte = endDateTime;
+      }
     }
 
     const skip = (page - 1) * limit;
@@ -45,13 +71,17 @@ async function getEmployees(req: NextRequest) {
 
     const total = await Employee.countDocuments(query);
 
+    const pages = Math.ceil(total / limit);
+    
     return NextResponse.json({
       employees,
       pagination: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit),
+        pages,
+        hasNext: page < pages,
+        hasPrev: page > 1,
       },
     });
 
@@ -81,7 +111,7 @@ async function createEmployee(req: NextRequest) {
     await employee.save();
 
     // Create a user account for the employee
-    const hashedPassword = await hashPassword('password123'); // Default password
+    const hashedPassword: string = await hashPassword('password123'); // Default password
     const user = new User({
       email: employeeData.personalInfo.email,
       password: hashedPassword,
