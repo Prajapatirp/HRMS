@@ -44,9 +44,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Redirect to login if user is not authenticated
   useEffect(() => {
     if (!loading && !user && !token) {
-      // Only redirect if we're not already on the home page
-      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-        router.push('/');
+      // Don't redirect if we're on public pages (login, forgot password, reset password)
+      if (typeof window !== 'undefined') {
+        const publicPaths = ['/', '/forgot-password', '/reset-password'];
+        const currentPath = window.location.pathname;
+        
+        // Check if current path starts with any public path (to handle query params)
+        const isPublicPath = publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '?'));
+        
+        // Only redirect if we're not on a public page
+        if (!isPublicPath) {
+          router.push('/');
+        }
       }
     }
   }, [user, token, loading, router]);
