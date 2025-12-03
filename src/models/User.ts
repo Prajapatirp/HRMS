@@ -6,6 +6,8 @@ export interface IUser extends Document {
   role: 'admin' | 'hr' | 'manager' | 'employee';
   employeeId?: string;
   isActive: boolean;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   notificationSettings?: {
     emailNotifications: boolean;
     leaveReminders: boolean;
@@ -41,6 +43,12 @@ const UserSchema: Schema = new Schema({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  resetPasswordToken: {
+    type: String,
+  },
+  resetPasswordExpires: {
+    type: Date,
   },
   notificationSettings: {
     emailNotifications: {
