@@ -23,7 +23,7 @@ export const sendResetPasswordEmail = async (email: string, resetToken: string) 
   console.log('Reset URL:', resetUrl);
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    from: 'admin@yopmail.com',
     to: email,
     subject: 'HRMS - Password Reset Request',
     html: `
