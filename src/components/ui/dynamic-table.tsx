@@ -156,7 +156,8 @@ export default function DynamicTable<T = any>({
       {pagination && pagination.pages > 0 && (
         <div className="mt-6 space-y-4">
           {/* Mobile: Simplified pagination */}
-          <div className="md:hidden flex items-center justify-between">
+          <div className="md:hidden space-y-3">
+            {/* Records per page - Mobile */}
             {onRecordsPerPageChange && recordsPerPage && (
               <div className="flex items-center space-x-2">
                 <Label htmlFor="recordsPerPageMobile" className="text-sm text-gray-700 whitespace-nowrap">
@@ -166,7 +167,7 @@ export default function DynamicTable<T = any>({
                   id="recordsPerPageMobile"
                   value={recordsPerPage}
                   onChange={(e) => onRecordsPerPageChange(e.target.value)}
-                  className="w-28"
+                  className="w-24"
                 >
                   <option value="5">5</option>
                   <option value="10">10</option>
@@ -176,20 +177,21 @@ export default function DynamicTable<T = any>({
               </div>
             )}
             
+            {/* Pagination buttons - Mobile */}
             {onPageChange && pagination.pages > 1 && (
-              <>
+              <div className="flex items-center justify-between gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onPageChange(pagination.page - 1)}
                   disabled={!pagination.hasPrev}
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 flex-shrink-0 min-w-[80px]"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   <span>Previous</span>
                 </Button>
                 
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 whitespace-nowrap px-2">
                   Page {pagination.page} of {pagination.pages}
                 </span>
                 
@@ -198,12 +200,12 @@ export default function DynamicTable<T = any>({
                   size="sm"
                   onClick={() => onPageChange(pagination.page + 1)}
                   disabled={!pagination.hasNext}
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 flex-shrink-0 min-w-[80px]"
                 >
                   <span>Next</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-              </>
+              </div>
             )}
           </div>
 

@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
 import DynamicModal from '@/components/ui/dynamic-modal';
-import { Plus, Edit, Trash2, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const validationSchema = Yup.object({
@@ -62,6 +62,7 @@ export default function AdminProjectsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -597,68 +598,85 @@ export default function AdminProjectsPage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </CardTitle>
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+            >
+              <CardTitle className="flex items-center space-x-2">
+                <Filter className="h-5 w-5" />
+                <span>Filters</span>
+              </CardTitle>
+              {filtersOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="projectNameFilter">Project Name</Label>
-                <Input
-                  id="projectNameFilter"
-                  type="text"
-                  placeholder="Search project name..."
-                  value={filters.projectName}
-                  onChange={(e) => handleFilterChange('projectName', e.target.value)}
-                />
+          {filtersOpen && (
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="projectNameFilter" className="text-sm font-medium text-gray-700">Project Name</Label>
+                  <Input
+                    id="projectNameFilter"
+                    type="text"
+                    placeholder="Search project name..."
+                    value={filters.projectName}
+                    onChange={(e) => handleFilterChange('projectName', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">Status</Label>
+                  <Select
+                    id="statusFilter"
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="w-full"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="completed">Completed</option>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDateFilter" className="text-sm font-medium text-gray-700">Start Date</Label>
+                  <Input
+                    id="startDateFilter"
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDateFilter" className="text-sm font-medium text-gray-700">End Date</Label>
+                  <Input
+                    id="endDateFilter"
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="statusFilter">Status</Label>
-                <Select
-                  id="statusFilter"
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
+                  <Filter className="h-4 w-4" />
+                  <span>Apply Filters</span>
+                </Button>
+                <Button
+                  onClick={clearFilters}
+                  variant="outline"
+                  className="w-full sm:w-auto"
                 >
-                  <option value="">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="completed">Completed</option>
-                </Select>
+                  Clear Filters
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="startDateFilter">Start Date</Label>
-                <Input
-                  id="startDateFilter"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDateFilter">End Date</Label>
-                <Input
-                  id="endDateFilter"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button onClick={applyFilters} className="flex items-center space-x-2">
-                <Filter className="h-4 w-4" />
-                <span>Apply Filters</span>
-              </Button>
-              <Button
-                onClick={clearFilters}
-                variant="outline"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {/* Projects Table */}

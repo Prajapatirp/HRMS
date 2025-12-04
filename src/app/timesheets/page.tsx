@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
-import { Plus, Edit, Trash2, Filter, Calendar, User, Briefcase } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, Calendar, User, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Project {
   _id: string;
@@ -52,6 +52,7 @@ export default function TimesheetsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTimesheet, setEditingTimesheet] = useState<Timesheet | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -631,82 +632,98 @@ export default function TimesheetsPage() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
-            <span>Filters</span>
-          </CardTitle>
+          <button
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+          >
+            <CardTitle className="flex items-center space-x-2">
+              <Filter className="h-5 w-5" />
+              <span>Filters</span>
+            </CardTitle>
+            {filtersOpen ? (
+              <ChevronUp className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {(user?.role === 'admin' || user?.role === 'hr') && (
-              <div>
-                <Label htmlFor="employeeId">Employee</Label>
+        {filtersOpen && (
+          <CardContent>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${(user?.role === 'admin' || user?.role === 'hr') ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
+              {(user?.role === 'admin' || user?.role === 'hr') && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="employeeId" className="text-sm font-medium text-gray-700">Employee</Label>
+                  <Select
+                    id="employeeId"
+                    value={filters.employeeId}
+                    onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+                    className="w-full"
+                  >
+                    <option value="">All Employees</option>
+                    {employees.map((emp) => (
+                      <option key={emp.employeeId} value={emp.employeeId}>
+                        {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="projectId" className="text-sm font-medium text-gray-700">Project</Label>
                 <Select
-                  id="employeeId"
-                  value={filters.employeeId}
-                  onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+                  id="projectId"
+                  value={filters.projectId}
+                  onChange={(e) => handleFilterChange('projectId', e.target.value)}
+                  className="w-full"
                 >
-                  <option value="">All Employees</option>
-                  {employees.map((emp) => (
-                    <option key={emp.employeeId} value={emp.employeeId}>
-                      {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                  <option value="">All Projects</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>
+                      {project.name}
                     </option>
                   ))}
                 </Select>
               </div>
-            )}
 
-            <div>
-              <Label htmlFor="projectId">Project</Label>
-              <Select
-                id="projectId"
-                value={filters.projectId}
-                onChange={(e) => handleFilterChange('projectId', e.target.value)}
+              <div className="space-y-1.5">
+                <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
+                <Filter className="h-4 w-4" />
+                <span>Apply Filters</span>
+              </Button>
+              <Button 
+                onClick={clearFilters}
+                variant="outline"
+                className="w-full sm:w-auto"
               >
-                <option value="">All Projects</option>
-                {projects.map((project) => (
-                  <option key={project._id} value={project._id}>
-                    {project.name}
-                  </option>
-                ))}
-              </Select>
+                Clear Filters
+              </Button>
             </div>
-
-            <div>
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              />
-            </div>
-
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button onClick={applyFilters} className="flex items-center space-x-2">
-              <Filter className="h-4 w-4" />
-              <span>Apply Filters</span>
-            </Button>
-            <Button 
-              onClick={clearFilters}
-              variant="outline"
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {/* Timesheet Form */}
