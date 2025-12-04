@@ -671,19 +671,6 @@ export default function AdminTimesheetsPage() {
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="limitFilter">Records per page</Label>
-              <Select
-                id="limitFilter"
-                value={filters.limit}
-                onChange={(e) => handleFilterChange('limit', e.target.value)}
-              >
-                <option value="5">5 records</option>
-                <option value="10">10 records</option>
-                <option value="20">20 records</option>
-                <option value="50">50 records</option>
-              </Select>
-            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -714,6 +701,12 @@ export default function AdminTimesheetsPage() {
             emptyMessage="No timesheets found matching the current filters."
             pagination={pagination}
             onPageChange={handlePageChange}
+            recordsPerPage={filters.limit}
+            onRecordsPerPageChange={(limit) => {
+              setFilters((prev) => ({ ...prev, limit }));
+              setPagination((prev) => ({ ...prev, page: 1 }));
+              setTimeout(() => fetchTimesheets(1), 100);
+            }}
             keyExtractor={(record) => record._id}
             mobileCardRender={renderTimesheetMobileCard}
           />

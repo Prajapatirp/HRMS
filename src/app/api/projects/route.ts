@@ -17,16 +17,103 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // For admin/HR users, show all projects. For others, show only active projects
-    const query = (decoded.role === 'admin' || decoded.role === 'hr') 
+    const { searchParams } = new URL(request.url);
+    const projectName = searchParams.get('projectName');
+    const status = searchParams.get('status');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+
+    // Base query - For admin/HR users, show all projects. For others, show only active projects
+    const query: any = (decoded.role === 'admin' || decoded.role === 'hr') 
       ? {} 
       : { status: 'active' };
-    
+
+    // Filter by project name
+    if (projectName) {
+      query.name = { $regex: projectName, $options: 'i' };
+    }
+
+    // Filter by status
+    if (status) {
+      query.status = status;
+    }
+
+    // Filter by date range - Projects that overlap with the filter date range
+    if (startDate || endDate) {
+      const dateConditions: any[] = [];
+      
+      if (startDate && endDate) {
+        const filterStart = new Date(startDate);
+        const filterEnd = new Date(endDate);
+        filterEnd.setHours(23, 59, 59, 999);
+        
+        // Projects that overlap with the filter date range or have no dates
+        dateConditions.push(
+          // Project has dates and overlaps with filter range
+          {
+            startDate: { $lte: filterEnd },
+            endDate: { $gte: filterStart }
+          },
+          // Project has only start date within range
+          {
+            startDate: { $lte: filterEnd, $exists: true },
+            endDate: { $exists: false }
+          },
+          // Project has only end date within range
+          {
+            startDate: { $exists: false },
+            endDate: { $gte: filterStart, $exists: true }
+          },
+          // Project has no dates (include all)
+          {
+            startDate: { $exists: false },
+            endDate: { $exists: false }
+          }
+        );
+      } else if (startDate) {
+        const filterStart = new Date(startDate);
+        dateConditions.push(
+          { startDate: { $lte: filterStart } },
+          { startDate: { $exists: false } }
+        );
+      } else if (endDate) {
+        const filterEnd = new Date(endDate);
+        filterEnd.setHours(23, 59, 59, 999);
+        dateConditions.push(
+          { endDate: { $gte: filterEnd } },
+          { endDate: { $exists: false } }
+        );
+      }
+      
+      if (dateConditions.length > 0) {
+        query.$or = dateConditions;
+      }
+    }
+
+    const skip = (page - 1) * limit;
+
     const projects = await Project.find(query)
       .select('name description status startDate endDate createdBy createdAt updatedAt')
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit);
 
-    return NextResponse.json({ projects });
+    const total = await Project.countDocuments(query);
+    const pages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      projects,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages,
+        hasNext: page < pages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (error) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(

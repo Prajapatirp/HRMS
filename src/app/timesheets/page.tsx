@@ -692,19 +692,6 @@ export default function TimesheetsPage() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="limit">Records per page</Label>
-              <Select
-                id="limit"
-                value={filters.limit}
-                onChange={(e) => handleFilterChange('limit', e.target.value)}
-              >
-                <option value="5">5 records</option>
-                <option value="10">10 records</option>
-                <option value="20">20 records</option>
-                <option value="50">50 records</option>
-              </Select>
-            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -833,6 +820,12 @@ export default function TimesheetsPage() {
             emptyMessage="No timesheets found. Create your first timesheet entry."
             pagination={pagination}
             onPageChange={handlePageChange}
+            recordsPerPage={filters.limit}
+            onRecordsPerPageChange={(limit) => {
+              setFilters((prev) => ({ ...prev, limit }));
+              setPagination((prev) => ({ ...prev, page: 1 }));
+              setTimeout(() => fetchTimesheets(1), 100);
+            }}
             keyExtractor={(record) => record._id}
             mobileCardRender={renderTimesheetMobileCard}
           />

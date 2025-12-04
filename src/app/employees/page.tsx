@@ -561,19 +561,6 @@ export default function EmployeesPage() {
                 />
                     </div>
 
-              <div>
-                <Label htmlFor="limit">Records per page</Label>
-                <Select
-                  id="limit"
-                  value={filters.limit}
-                  onChange={(e) => handleFilterChange('limit', e.target.value)}
-                >
-                  <option value="5">5 records</option>
-                  <option value="10">10 records</option>
-                  <option value="20">20 records</option>
-                  <option value="50">50 records</option>
-                </Select>
-                    </div>
                   </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -610,6 +597,15 @@ export default function EmployeesPage() {
               emptyMessage="No employees found. Get started by adding your first employee."
               pagination={pagination}
               onPageChange={handlePageChange}
+              recordsPerPage={filters.limit}
+              onRecordsPerPageChange={(limit) => {
+                handleFilterChange('limit', limit);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+                setTimeout(() => {
+                  const updatedFilters = { ...filters, limit };
+                  fetchEmployees(1, updatedFilters, user?.employeeId);
+                }, 100);
+              }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderEmployeeMobileCard}
             />
