@@ -44,16 +44,16 @@ export default function LoginForm() {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 py-12 px-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">HRMS Login</h1>
-          <p className="text-gray-600">Enter your credentials to access the system</p>
+          <p className="text-gray-600 text-sm">Enter your credentials to access the system</p>
         </div>
         
-        <form onSubmit={formik.handleSubmit} className="space-y-6">
+        <form onSubmit={formik.handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
               {error}
             </div>
           )}
@@ -70,14 +70,14 @@ export default function LoginForm() {
               value={formik.values.email}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className={`w-full px-3 py-2 border-2 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-3 py-2.5 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                 formik.touched.email && formik.errors.email
                   ? 'border-red-500'
-                  : 'border-gray-400'
+                  : 'border-gray-300'
               }`}
             />
             {formik.touched.email && formik.errors.email && (
-              <p className="mt-1 text-sm text-red-600">{formik.errors.email}</p>
+              <p className="mt-1 text-xs text-red-600">{formik.errors.email}</p>
             )}
           </div>
           
@@ -94,10 +94,10 @@ export default function LoginForm() {
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`w-full px-3 py-2 pr-10 border-2 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2.5 pr-10 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                   formik.touched.password && formik.errors.password
                     ? 'border-red-500'
-                    : 'border-gray-400'
+                    : 'border-gray-300'
                 }`}
               />
               <button
@@ -113,20 +113,20 @@ export default function LoginForm() {
               </button>
             </div>
             {formik.touched.password && formik.errors.password && (
-              <p className="mt-1 text-sm text-red-600">{formik.errors.password}</p>
+              <p className="mt-1 text-xs text-red-600">{formik.errors.password}</p>
             )}
           </div>
           
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
         
-        <div className="mt-4 text-center">
+        <div className="mt-6 text-center">
           <button
             type="button"
             onClick={() => router.push('/forgot-password')}
@@ -135,13 +135,6 @@ export default function LoginForm() {
             Forgot Password?
           </button>
         </div>
-        
-        {/* <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Default Admin Credentials:</p>
-          <p className="font-mono bg-gray-100 p-2 rounded mt-2">
-            admin@hrms.com / admin123
-          </p>
-        </div> */}
       </div>
     </div>
   );
