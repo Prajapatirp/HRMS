@@ -1,14 +1,47 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
+import DynamicModal from '@/components/ui/dynamic-modal';
+import { Plus, Edit, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+
+const validationSchema = Yup.object({
+  name: Yup.string()
+    .required('Project name is required')
+    .min(2, 'Project name must be at least 2 characters')
+    .max(100, 'Project name must be less than 100 characters'),
+  status: Yup.string()
+    .required('Status is required')
+    .oneOf(['active', 'inactive', 'completed'], 'Invalid status'),
+  startDate: Yup.string()
+    .nullable()
+    .test('date-format', 'Invalid date format', function(value) {
+      if (!value) return true; // Optional field
+      return !isNaN(Date.parse(value));
+    }),
+  endDate: Yup.string()
+    .nullable()
+    .test('date-format', 'Invalid date format', function(value) {
+      if (!value) return true; // Optional field
+      return !isNaN(Date.parse(value));
+    })
+    .test('end-after-start', 'End date must be after start date', function(value) {
+      const { startDate } = this.parent;
+      if (!value || !startDate) return true; // Both optional
+      return new Date(value) >= new Date(startDate);
+    }),
+  description: Yup.string()
+    .max(500, 'Description must be less than 500 characters'),
+});
 
 interface Project {
   _id: string;
@@ -23,61 +56,118 @@ interface Project {
 }
 
 export default function AdminProjectsPage() {
+  const { token } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    status: 'active' as 'active' | 'inactive' | 'completed',
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
+
+  // Filters
+  const [filters, setFilters] = useState({
+    projectName: '',
+    status: '',
     startDate: '',
     endDate: '',
+    limit: '10',
+  });
+
+  // Formik form
+  const formik = useFormik({
+    initialValues: {
+      name: '',
+      description: '',
+      status: 'active' as 'active' | 'inactive' | 'completed',
+      startDate: '',
+      endDate: '',
+    },
+    validationSchema,
+    enableReinitialize: true,
+    onSubmit: async (values) => {
+      setSubmitting(true);
+
+      try {
+        if (!token) return;
+        const url = editingProject 
+          ? `/api/projects/${editingProject._id}`
+          : '/api/projects';
+        
+        const method = editingProject ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(values),
+        });
+
+        if (response.ok) {
+          alert(editingProject ? 'Project updated successfully!' : 'Project created successfully!');
+          setShowForm(false);
+          setEditingProject(null);
+          formik.resetForm();
+          fetchProjects(pagination.page);
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to save project');
+        }
+      } catch (error) {
+        console.error('Error saving project:', error);
+        alert('Failed to save project. Please try again.');
+      } finally {
+        setSubmitting(false);
+      }
+    },
   });
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  // Filter projects based on search term and status
-  useEffect(() => {
-    let filtered = projects;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(project =>
-        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+    if (token) {
+      fetchProjects(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(project => project.status === statusFilter);
-    }
-
-    setFilteredProjects(filtered);
-  }, [projects, searchTerm, statusFilter]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async (page: number = 1, currentFilters = filters) => {
     try {
+      if (!token) return;
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/projects', {
+
+      const params = new URLSearchParams();
+      if (currentFilters.projectName) params.append('projectName', currentFilters.projectName);
+      if (currentFilters.status) params.append('status', currentFilters.status);
+      if (currentFilters.startDate) params.append('startDate', currentFilters.startDate);
+      if (currentFilters.endDate) params.append('endDate', currentFilters.endDate);
+      params.append('page', page.toString());
+      params.append('limit', currentFilters.limit);
+
+      const response = await fetch(`/api/projects?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
-        setProjects(data.projects);
+        setProjects(data.projects || []);
+        setPagination(data.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0,
+          hasNext: false,
+          hasPrev: false,
+        });
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to fetch projects');
@@ -88,67 +178,39 @@ export default function AdminProjectsPage() {
     } finally {
       setLoading(false);
     }
+  }, [token, filters]);
+
+  const handlePageChange = (page: number) => {
+    fetchProjects(page);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation
-    if (!formData.name.trim()) {
-      alert('Project name is required');
-      return;
-    }
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
-    // Date validation
-    if (formData.startDate && formData.endDate) {
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(formData.endDate);
-      if (startDate > endDate) {
-        alert('Start date cannot be after end date');
-        return;
-      }
-    }
+  const applyFilters = () => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchProjects(1, filters);
+  };
 
-    setSubmitting(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      const url = editingProject 
-        ? `/api/projects/${editingProject._id}`
-        : '/api/projects';
-      
-      const method = editingProject ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        alert(editingProject ? 'Project updated successfully!' : 'Project created successfully!');
-        setShowForm(false);
-        setEditingProject(null);
-        resetForm();
-        fetchProjects();
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to save project');
-      }
-    } catch (error) {
-      console.error('Error saving project:', error);
-      alert('Failed to save project. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+  const clearFilters = () => {
+    const clearedFilters = {
+      projectName: '',
+      status: '',
+      startDate: '',
+      endDate: '',
+      limit: '10',
+    };
+    setFilters(clearedFilters);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setTimeout(() => {
+      fetchProjects(1, clearedFilters);
+    }, 100);
   };
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
-    setFormData({
+    formik.setValues({
       name: project.name,
       description: project.description || '',
       status: project.status,
@@ -165,7 +227,7 @@ export default function AdminProjectsPage() {
     if (!confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) return;
 
     try {
-      const token = localStorage.getItem('token');
+      if (!token) return;
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'DELETE',
         headers: {
@@ -175,7 +237,7 @@ export default function AdminProjectsPage() {
 
       if (response.ok) {
         alert('Project deleted successfully!');
-        fetchProjects();
+        fetchProjects(pagination.page);
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to delete project');
@@ -186,15 +248,6 @@ export default function AdminProjectsPage() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      status: 'active',
-      startDate: '',
-      endDate: '',
-    });
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -205,207 +258,457 @@ export default function AdminProjectsPage() {
     }
   };
 
+  // Define columns for project table
+  const projectColumns: Column<Project>[] = [
+    {
+      key: 'name',
+      label: 'Project Name',
+      minWidth: '200px',
+      render: (value) => (
+        <span className="font-medium">{value}</span>
+      ),
+      mobileLabel: 'Project Name',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      minWidth: '250px',
+      render: (value) => (
+        <span className="text-gray-600">{value || '-'}</span>
+      ),
+      mobileLabel: 'Description',
+      hideOnMobile: true,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '120px',
+      render: (value) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(value)}`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'startDate',
+      label: 'Start Date',
+      minWidth: '120px',
+      render: (value) => (
+        value ? new Date(value).toLocaleDateString() : '-'
+      ),
+      mobileLabel: 'Start Date',
+    },
+    {
+      key: 'endDate',
+      label: 'End Date',
+      minWidth: '120px',
+      render: (value) => (
+        value ? new Date(value).toLocaleDateString() : '-'
+      ),
+      mobileLabel: 'End Date',
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      minWidth: '120px',
+      render: (value) => (
+        new Date(value).toLocaleDateString()
+      ),
+      mobileLabel: 'Created',
+      hideOnMobile: true,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      minWidth: '150px',
+      render: (_, record) => (
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleEdit(record)}
+            className="flex items-center space-x-1"
+          >
+            <Edit className="h-3 w-3" />
+            <span>Edit</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleDelete(record._id)}
+            className="text-red-600 hover:text-red-700 flex items-center space-x-1"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>Delete</span>
+          </Button>
+        </div>
+      ),
+      mobileLabel: 'Actions',
+      mobileRender: (_, record) => (
+        <div className="flex flex-col space-y-2 pt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleEdit(record)}
+            className="w-full flex items-center justify-center space-x-1"
+          >
+            <Edit className="h-3 w-3" />
+            <span>Edit</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleDelete(record._id)}
+            className="w-full text-red-600 hover:text-red-700 flex items-center justify-center space-x-1"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>Delete</span>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Mobile card render for projects
+  const renderProjectMobileCard = (project: Project) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Project Name</p>
+          <div className="text-sm font-medium text-gray-900">{project.name}</div>
+        </div>
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Status</p>
+          <div className="text-sm text-gray-900">
+            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
+              {project.status}
+            </span>
+          </div>
+        </div>
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Start Date</p>
+          <div className="text-sm text-gray-900">
+            {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}
+          </div>
+        </div>
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">End Date</p>
+          <div className="text-sm text-gray-900">
+            {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}
+          </div>
+        </div>
+        <div className="pt-2">
+          <div className="flex flex-col space-y-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleEdit(project)}
+              className="w-full flex items-center justify-center space-x-1"
+            >
+              <Edit className="h-3 w-3" />
+              <span>Edit</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDelete(project._id)}
+              className="w-full text-red-600 hover:text-red-700 flex items-center justify-center space-x-1"
+            >
+              <Trash2 className="h-3 w-3" />
+              <span>Delete</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Project Management</h1>
-          <p className="text-gray-600 mt-1">Create and manage projects for timesheet tracking</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Project Management</h1>
+            <p className="text-gray-600 mt-1">Create and manage projects for timesheet tracking</p>
+          </div>
+          <Button
+            onClick={() => {
+              formik.resetForm();
+              setEditingProject(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Project
+          </Button>
         </div>
-        <Button
-          onClick={() => {
-            resetForm();
-            setEditingProject(null);
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Project
-        </Button>
-      </div>
 
-      {/* Project Form */}
-      {showForm && (
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">
-            {editingProject ? 'Edit Project' : 'Add New Project'}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Project Form Modal */}
+        <DynamicModal
+          isOpen={showForm}
+          onClose={() => {
+            setShowForm(false);
+            setEditingProject(null);
+            formik.resetForm();
+          }}
+          title={editingProject ? 'Edit Project' : 'Add New Project'}
+          maxWidth="max-w-2xl"
+          footer={
+            <div className="flex gap-2">
+              <Button
+                onClick={() => formik.handleSubmit()}
+                disabled={submitting}
+              >
+                {submitting ? 'Saving...' : editingProject ? 'Update' : 'Save'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingProject(null);
+                  formik.resetForm();
+                }}
+                className="text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+              >
+                Cancel
+              </Button>
+            </div>
+          }
+        >
+          <form onSubmit={formik.handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Project Name</Label>
+                <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
+                  name="name"
+                  type="text"
+                  value={formik.values.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Enter project name"
+                  className={`text-gray-900 ${
+                    formik.touched.name && formik.errors.name
+                      ? 'border-red-500'
+                      : ''
+                  }`}
                 />
+                {formik.touched.name && formik.errors.name && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.name}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </Label>
                 <Select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'completed' })}
+                  id="status"
+                  name="status"
+                  value={formik.values.status}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={`text-gray-900 ${
+                    formik.touched.status && formik.errors.status
+                      ? 'border-red-500'
+                      : ''
+                  }`}
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                   <option value="completed">Completed</option>
                 </Select>
+                {formik.touched.status && formik.errors.status && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.status}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="startDate">Start Date (Optional)</Label>
+                <Label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date (Optional)
+                </Label>
                 <Input
                   id="startDate"
+                  name="startDate"
                   type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  value={formik.values.startDate}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Select start date"
+                  className={`text-gray-900 ${
+                    formik.touched.startDate && formik.errors.startDate
+                      ? 'border-red-500'
+                      : ''
+                  }`}
                 />
+                {formik.touched.startDate && formik.errors.startDate && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.startDate}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="endDate">End Date (Optional)</Label>
+                <Label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  End Date (Optional)
+                </Label>
                 <Input
                   id="endDate"
+                  name="endDate"
                   type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  value={formik.values.endDate}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Select end date"
+                  className={`text-gray-900 ${
+                    formik.touched.endDate && formik.errors.endDate
+                      ? 'border-red-500'
+                      : ''
+                  }`}
                 />
+                {formik.touched.endDate && formik.errors.endDate && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.endDate}</p>
+                )}
               </div>
             </div>
             <div>
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                Description (Optional)
+              </Label>
               <textarea
                 id="description"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                name="description"
+                className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 ${
+                  formik.touched.description && formik.errors.description
+                    ? 'border-red-500'
+                    : 'border-gray-300'
+                }`}
                 rows={3}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                value={formik.values.description}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
                 placeholder="Describe the project..."
               />
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Saving...' : editingProject ? 'Update' : 'Save'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingProject(null);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
+              {formik.touched.description && formik.errors.description && (
+                <p className="mt-1 text-xs text-red-600">{formik.errors.description}</p>
+              )}
             </div>
           </form>
-        </Card>
-      )}
+        </DynamicModal>
 
-      {/* Search and Filter */}
-      <Card>
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold mb-4">Projects</h2>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search projects by name or description..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+            >
+              <CardTitle className="flex items-center space-x-2">
+                <Filter className="h-5 w-5" />
+                <span>Filters</span>
+              </CardTitle>
+              {filtersOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+          </CardHeader>
+          {filtersOpen && (
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="projectNameFilter" className="text-sm font-medium text-gray-700">Project Name</Label>
+                  <Input
+                    id="projectNameFilter"
+                    type="text"
+                    placeholder="Search project name..."
+                    value={filters.projectName}
+                    onChange={(e) => handleFilterChange('projectName', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">Status</Label>
+                  <Select
+                    id="statusFilter"
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="w-full"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="completed">Completed</option>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDateFilter" className="text-sm font-medium text-gray-700">Start Date</Label>
+                  <Input
+                    id="startDateFilter"
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDateFilter" className="text-sm font-medium text-gray-700">End Date</Label>
+                  <Input
+                    id="endDateFilter"
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="sm:w-48">
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="completed">Completed</option>
-              </Select>
-            </div>
-          </div>
-          <div className="mt-2 text-sm text-gray-600">
-            Showing {filteredProjects.length} of {projects.length} projects
-          </div>
-        </div>
-        {loading ? (
-          <div className="p-8 text-center">Loading...</div>
-        ) : filteredProjects.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {projects.length === 0 
-              ? "No projects found. Create your first project."
-              : "No projects match your search criteria."
-            }
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project) => (
-                <TableRow key={project._id}>
-                  <TableCell className="font-medium">
-                    {project.name}
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {project.description || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
-                      {project.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(project.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(project)}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(project._id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
+                  <Filter className="h-4 w-4" />
+                  <span>Apply Filters</span>
+                </Button>
+                <Button
+                  onClick={clearFilters}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Projects Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Projects</CardTitle>
+            <CardDescription>
+              Showing {projects.length} of {pagination.total} projects
+              {pagination.total > 0 && (
+                <span> (Page {pagination.page} of {pagination.pages})</span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DynamicTable
+              data={projects}
+              columns={projectColumns}
+              loading={loading}
+              emptyMessage="No projects found matching the current filters."
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              recordsPerPage={filters.limit}
+              onRecordsPerPageChange={(limit) => {
+                handleFilterChange('limit', limit);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+                setTimeout(() => fetchProjects(1, { ...filters, limit }), 100);
+              }}
+              keyExtractor={(record) => record._id}
+              mobileCardRender={renderProjectMobileCard}
+            />
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

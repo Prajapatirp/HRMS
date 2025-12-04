@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Filter, Eye, Edit, Mail, Phone, Building, Briefcase, Calendar } from 'lucide-react';
+import { Plus, Filter, Eye, Edit, Mail, Phone, Building, Briefcase, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import EmployeeDetailsModal from '@/components/employees/EmployeeDetailsModal';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
@@ -40,6 +40,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -496,100 +497,104 @@ export default function EmployeesPage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </CardTitle>
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+            >
+              <CardTitle className="flex items-center space-x-2">
+                <Filter className="h-5 w-5" />
+                <span>Filters</span>
+              </CardTitle>
+              {filtersOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-              <div>
-                <Label htmlFor="employeeName">Employee Name</Label>
-                <Input
-                  id="employeeName"
-                  type="text"
-                  placeholder="Enter employee name"
-                  value={filters.employeeName}
-                  onChange={(e) => handleFilterChange('employeeName', e.target.value)}
-                />
+          {filtersOpen && (
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="employeeName" className="text-sm font-medium text-gray-700">Employee Name</Label>
+                  <Input
+                    id="employeeName"
+                    type="text"
+                    placeholder="Enter employee name"
+                    value={filters.employeeName}
+                    onChange={(e) => handleFilterChange('employeeName', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="department" className="text-sm font-medium text-gray-700">Department</Label>
+                  <Select
+                    id="department"
+                    value={filters.department}
+                    onChange={(e) => handleFilterChange('department', e.target.value)}
+                    className="w-full"
+                  >
+                    <option value="">All Departments</option>
+                    {uniqueDepartments.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept.charAt(0).toUpperCase() + dept.slice(1)}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="designation" className="text-sm font-medium text-gray-700">Designation</Label>
+                  <Input
+                    id="designation"
+                    type="text"
+                    placeholder="Enter designation"
+                    value={filters.designation}
+                    onChange={(e) => handleFilterChange('designation', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="department">Department</Label>
-                <Select
-                  id="department"
-                  value={filters.department}
-                  onChange={(e) => handleFilterChange('department', e.target.value)}
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
+                  <Filter className="h-4 w-4" />
+                  <span>Apply Filters</span>
+                </Button>
+                <Button 
+                  onClick={clearFilters}
+                  variant="outline"
+                  className="w-full sm:w-auto"
                 >
-                  <option value="">All Departments</option>
-                  {uniqueDepartments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept.charAt(0).toUpperCase() + dept.slice(1)}
-                    </option>
-                  ))}
-                </Select>
-            </div>
-
-              <div>
-                <Label htmlFor="designation">Designation</Label>
-                <Input
-                  id="designation"
-                  type="text"
-                  placeholder="Enter designation"
-                  value={filters.designation}
-                  onChange={(e) => handleFilterChange('designation', e.target.value)}
-                />
-          </div>
-
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                />
-                    </div>
-
-                    <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                />
-                    </div>
-
-              <div>
-                <Label htmlFor="limit">Records per page</Label>
-                <Select
-                  id="limit"
-                  value={filters.limit}
-                  onChange={(e) => handleFilterChange('limit', e.target.value)}
-                >
-                  <option value="5">5 records</option>
-                  <option value="10">10 records</option>
-                  <option value="20">20 records</option>
-                  <option value="50">50 records</option>
-                </Select>
-                    </div>
-                  </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button onClick={applyFilters} className="flex items-center space-x-2">
-                <Filter className="h-4 w-4" />
-                <span>Apply Filters</span>
-                    </Button>
-                    <Button 
-                onClick={clearFilters}
-                      variant="outline" 
-                    >
-                Clear Filters
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  Clear Filters
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Employees Table */}
           <Card>
@@ -610,6 +615,15 @@ export default function EmployeesPage() {
               emptyMessage="No employees found. Get started by adding your first employee."
               pagination={pagination}
               onPageChange={handlePageChange}
+              recordsPerPage={filters.limit}
+              onRecordsPerPageChange={(limit) => {
+                handleFilterChange('limit', limit);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+                setTimeout(() => {
+                  const updatedFilters = { ...filters, limit };
+                  fetchEmployees(1, updatedFilters, user?.employeeId);
+                }, 100);
+              }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderEmployeeMobileCard}
             />

@@ -114,7 +114,7 @@ function ResetPasswordContent() {
 
   if (tokenValid === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Verifying token...</p>
@@ -125,26 +125,28 @@ function ResetPasswordContent() {
 
   if (tokenValid === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 py-12 px-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <span className="text-red-600 text-2xl">✕</span>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Token</h1>
-            <p className="text-gray-600 mb-6">{error || 'This reset link is invalid or has expired.'}</p>
-            <button
-              onClick={() => router.push('/forgot-password')}
-              className="text-blue-600 hover:text-blue-800 hover:underline mr-4"
-            >
-              Request New Reset Link
-            </button>
-            <button
-              onClick={() => router.push('/')}
-              className="text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              Back to Login
-            </button>
+            <p className="text-gray-600 mb-6 text-sm">{error || 'This reset link is invalid or has expired.'}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => router.push('/forgot-password')}
+                className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+              >
+                Request New Reset Link
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+              >
+                Back to Login
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -153,17 +155,17 @@ function ResetPasswordContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 py-12 px-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <span className="text-green-600 text-2xl">✓</span>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Password Reset Successful</h1>
-            <p className="text-gray-600 mb-6">Your password has been reset successfully. Redirecting to login...</p>
+            <p className="text-gray-600 mb-6 text-sm">Your password has been reset successfully. Redirecting to login...</p>
             <button
               onClick={() => router.push('/')}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+              className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium transition-colors"
             >
               Go to Login
             </button>
@@ -174,24 +176,24 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 py-12 px-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
         <button
           onClick={() => router.push('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-6 text-sm"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Login
         </button>
 
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Reset Password</h1>
-          <p className="text-gray-600">Enter your new password below</p>
+          <p className="text-gray-600 text-sm">Enter your new password below</p>
         </div>
 
-        <form onSubmit={formik.handleSubmit} className="space-y-6">
+        <form onSubmit={formik.handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
               {error}
             </div>
           )}
@@ -209,10 +211,10 @@ function ResetPasswordContent() {
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`w-full px-3 py-2 pr-10 border-2 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2.5 pr-10 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                   formik.touched.password && formik.errors.password
                     ? 'border-red-500'
-                    : 'border-gray-400'
+                    : 'border-gray-300'
                 }`}
               />
               <button
@@ -228,7 +230,7 @@ function ResetPasswordContent() {
               </button>
             </div>
             {formik.touched.password && formik.errors.password && (
-              <p className="mt-1 text-sm text-red-600">{formik.errors.password}</p>
+              <p className="mt-1 text-xs text-red-600">{formik.errors.password}</p>
             )}
           </div>
 
@@ -245,10 +247,10 @@ function ResetPasswordContent() {
                 value={formik.values.confirmPassword}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`w-full px-3 py-2 pr-10 border-2 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2.5 pr-10 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                   formik.touched.confirmPassword && formik.errors.confirmPassword
                     ? 'border-red-500'
-                    : 'border-gray-400'
+                    : 'border-gray-300'
                 }`}
               />
               <button
@@ -264,14 +266,14 @@ function ResetPasswordContent() {
               </button>
             </div>
             {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{formik.errors.confirmPassword}</p>
+              <p className="mt-1 text-xs text-red-600">{formik.errors.confirmPassword}</p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
             {loading ? 'Resetting Password...' : 'Reset Password'}
           </button>
@@ -284,7 +286,7 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>

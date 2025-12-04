@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Clock, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDateTime, formatDate } from '@/lib/utils';
 
@@ -46,6 +46,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -509,71 +510,73 @@ export default function AttendancePage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filter Attendance</span>
-            </CardTitle>
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+            >
+              <CardTitle className="flex items-center space-x-2">
+                <Filter className="h-5 w-5" />
+                <span>Filter Attendance</span>
+              </CardTitle>
+              {filtersOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                />
+          {filtersOpen && (
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
+                  <Select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="w-full"
+                  >
+                    <option value="">All statuses</option>
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="late">Late</option>
+                    <option value="half-day">Half Day</option>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                />
+              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:space-y-0">
+                <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
+                  <Search className="h-4 w-4" />
+                  <span>Apply Filters</span>
+                </Button>
+                <Button onClick={clearFilters} variant="outline" className="w-full sm:w-auto">
+                  Clear Filters
+                </Button>
               </div>
-
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                >
-                  <option value="">All statuses</option>
-                  <option value="present">Present</option>
-                  <option value="absent">Absent</option>
-                  <option value="late">Late</option>
-                  <option value="half-day">Half Day</option>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="limit">Records per page</Label>
-                <Select
-                  value={filters.limit}
-                  onChange={(e) => handleFilterChange('limit', e.target.value)}
-                >
-                  <option value="5">5 records</option>
-                  <option value="10">10 records</option>
-                  <option value="20">20 records</option>
-                  <option value="50">50 records</option>
-                </Select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:space-y-0">
-              <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
-                <Search className="h-4 w-4" />
-                <span>Apply Filters</span>
-              </Button>
-              <Button onClick={clearFilters} variant="outline" className="w-full sm:w-auto">
-                Clear Filters
-              </Button>
-            </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {/* Attendance History */}
@@ -595,6 +598,12 @@ export default function AttendancePage() {
               emptyMessage="No attendance records found."
               pagination={pagination}
               onPageChange={handlePageChange}
+              recordsPerPage={filters.limit}
+              onRecordsPerPageChange={(limit) => {
+                setFilters((prev) => ({ ...prev, limit }));
+                setPagination((prev) => ({ ...prev, page: 1 }));
+                setTimeout(() => fetchAttendance(1), 100);
+              }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderAttendanceMobileCard}
             />

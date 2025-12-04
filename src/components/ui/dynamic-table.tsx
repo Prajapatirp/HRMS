@@ -3,6 +3,8 @@
 import React from 'react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Column<T = any> {
@@ -31,6 +33,8 @@ interface DynamicTableProps<T = any> {
   emptyMessage?: string;
   pagination?: PaginationInfo;
   onPageChange?: (page: number) => void;
+  recordsPerPage?: string;
+  onRecordsPerPageChange?: (limit: string) => void;
   keyExtractor?: (record: T, index: number) => string;
   mobileCardRender?: (record: T, index: number) => React.ReactNode; // Custom mobile card render
   className?: string;
@@ -43,6 +47,8 @@ export default function DynamicTable<T = any>({
   emptyMessage = 'No records found.',
   pagination,
   onPageChange,
+  recordsPerPage,
+  onRecordsPerPageChange,
   keyExtractor = (_, index) => `row-${index}`,
   mobileCardRender,
   className = '',
@@ -147,35 +153,60 @@ export default function DynamicTable<T = any>({
       </div>
 
       {/* Pagination Controls */}
-      {pagination && pagination.pages > 1 && onPageChange && (
+      {pagination && pagination.pages > 0 && (
         <div className="mt-6 space-y-4">
           {/* Mobile: Simplified pagination */}
-          <div className="md:hidden flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(pagination.page - 1)}
-              disabled={!pagination.hasPrev}
-              className="flex items-center space-x-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>Previous</span>
-            </Button>
+          <div className="md:hidden space-y-3">
+            {/* Records per page - Mobile */}
+            {onRecordsPerPageChange && recordsPerPage && (
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="recordsPerPageMobile" className="text-sm text-gray-700 whitespace-nowrap">
+                  Records per page:
+                </Label>
+                <Select
+                  id="recordsPerPageMobile"
+                  value={recordsPerPage}
+                  onChange={(e) => onRecordsPerPageChange(e.target.value)}
+                  className="w-24"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </Select>
+              </div>
+            )}
             
-            <span className="text-sm text-gray-600">
-              Page {pagination.page} of {pagination.pages}
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(pagination.page + 1)}
-              disabled={!pagination.hasNext}
-              className="flex items-center space-x-1"
-            >
-              <span>Next</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            {/* Pagination buttons - Mobile */}
+            {onPageChange && pagination.pages > 1 && (
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(pagination.page - 1)}
+                  disabled={!pagination.hasPrev}
+                  className="flex items-center space-x-1 flex-shrink-0 min-w-[80px]"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span>Previous</span>
+                </Button>
+                
+                <span className="text-sm text-gray-600 whitespace-nowrap px-2">
+                  Page {pagination.page} of {pagination.pages}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(pagination.page + 1)}
+                  disabled={!pagination.hasNext}
+                  className="flex items-center space-x-1 flex-shrink-0 min-w-[80px]"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Desktop: Full pagination */}
@@ -185,54 +216,77 @@ export default function DynamicTable<T = any>({
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(pagination.page - 1)}
-                disabled={!pagination.hasPrev}
-                className="flex items-center space-x-1"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span>Previous</span>
-              </Button>
+              {onRecordsPerPageChange && recordsPerPage && (
+                <div className="flex items-center space-x-2 mr-4">
+                  <Label htmlFor="recordsPerPageDesktop" className="text-sm text-gray-700 whitespace-nowrap">
+                    Records per page:
+                  </Label>
+                  <Select
+                    id="recordsPerPageDesktop"
+                    value={recordsPerPage}
+                    onChange={(e) => onRecordsPerPageChange(e.target.value)}
+                    className="w-32"
+                  >
+                    <option value="5">5 records</option>
+                    <option value="10">10 records</option>
+                    <option value="20">20 records</option>
+                    <option value="50">50 records</option>
+                  </Select>
+                </div>
+              )}
               
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                  let pageNum;
-                  if (pagination.pages <= 5) {
-                    pageNum = i + 1;
-                  } else if (pagination.page <= 3) {
-                    pageNum = i + 1;
-                  } else if (pagination.page >= pagination.pages - 2) {
-                    pageNum = pagination.pages - 4 + i;
-                  } else {
-                    pageNum = pagination.page - 2 + i;
-                  }
+              {onPageChange && pagination.pages > 1 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(pagination.page - 1)}
+                    disabled={!pagination.hasPrev}
+                    className="flex items-center space-x-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span>Previous</span>
+                  </Button>
                   
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={pagination.page === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => onPageChange(pageNum)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(pagination.page + 1)}
-                disabled={!pagination.hasNext}
-                className="flex items-center space-x-1"
-              >
-                <span>Next</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                      let pageNum;
+                      if (pagination.pages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page >= pagination.pages - 2) {
+                        pageNum = pagination.pages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={pagination.page === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => onPageChange(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(pagination.page + 1)}
+                    disabled={!pagination.hasNext}
+                    className="flex items-center space-x-1"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -24,10 +24,32 @@ import {
 } from 'lucide-react';
 
 const getNavigation = (userRole: string) => {
+
+    if (userRole === 'admin' || userRole === 'hr') {
+      const baseNavigation = [
+        { name: 'Dashboard', href: '/dashboard', icon: Home },
+        { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
+        { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
+        { name: 'Leave Management', href: '/leaves', icon: FileText },
+        { name: 'Projects', href: '/admin/projects', icon: FileText },
+        { name: 'Payroll', href: '/payroll', icon: DollarSign },
+        { name: 'Performance', href: '/performance', icon: TrendingUp },
+        { name: 'Notifications', href: '/notifications', icon: Bell },
+        { name: 'Settings', href: '/settings', icon: Settings },
+      ];
+
+      baseNavigation.splice(1, 0, { name: 'Employees', href: '/employees', icon: Users });
+
+      baseNavigation.splice(-1, 0, { name: 'Reports', href: '/reports', icon: BarChart3 });
+
+      return baseNavigation;
+    }
+
   const baseNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Attendance', href: '/attendance', icon: Calendar },
     { name: 'Timesheets', href: '/timesheets', icon: Clock },
+
     { name: 'Leave Management', href: '/leaves', icon: FileText },
     { name: 'Payroll', href: '/payroll', icon: DollarSign },
     { name: 'Performance', href: '/performance', icon: TrendingUp },
@@ -35,24 +57,24 @@ const getNavigation = (userRole: string) => {
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
-  // Add Employees page for admin and HR users only
-  if (userRole === 'admin' || userRole === 'hr') {
-    baseNavigation.splice(1, 0, { name: 'Employees', href: '/employees', icon: Users });
-  }
+  // // Add Employees page for admin and HR users only
+  // if (userRole === 'admin' || userRole === 'hr') {
+  //   baseNavigation.splice(1, 0, { name: 'Employees', href: '/employees', icon: Users });
+  // }
 
-  // Add Reports page for admin, HR, and manager users only
-  if (userRole === 'admin' || userRole === 'hr' || userRole === 'manager') {
-    baseNavigation.splice(-1, 0, { name: 'Reports', href: '/reports', icon: BarChart3 });
-  }
+  // // Add Reports page for admin, HR, and manager users only
+  // if (userRole === 'admin' || userRole === 'hr' || userRole === 'manager') {
+  //   baseNavigation.splice(-1, 0, { name: 'Reports', href: '/reports', icon: BarChart3 });
+  // }
 
   return baseNavigation;
 };
 
 const getAdminNavigation = () => {
   return [
-    { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
-    { name: 'Projects', href: '/admin/projects', icon: FileText },
-    { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
+    // { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
+    // { name: 'Projects', href: '/admin/projects', icon: FileText },
+    // { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
     { name: 'Leaves', href: '/admin/leaves', icon: FileText },
     { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
   ];
