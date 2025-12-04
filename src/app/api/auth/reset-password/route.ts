@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
@@ -7,8 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    let { token } = await request.json();
-    const {password} = await request.json();
+    let { token, password } = await request.json();
 
     if (!token || !password) {
       return NextResponse.json(

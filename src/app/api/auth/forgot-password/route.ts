@@ -50,15 +50,13 @@ export async function POST(request: NextRequest) {
     // Send reset email
     try {
       await sendResetPasswordEmail(user.email, resetToken);
-    } catch (emailError) {
+    } catch (e) {
       // If email fails, clear the token
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
-
-      console.error('Email sending error:', emailError);
       return NextResponse.json(
-        { error: 'Failed to send reset email. Please try again later.' },
+        { error: 'Failed to send reset email. Please try again later. Error: ' + e },
         { status: 500 }
       );
     }

@@ -22,10 +22,7 @@ if (!cached) {
 }
 
 async function connectDB() {
-
-  console.log('MONGODB_URI', MONGODB_URI);
   if (cached.conn) {
-    console.log('cached.conn', cached.conn);
     return cached.conn;
   }
 
@@ -35,7 +32,6 @@ async function connectDB() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('mongoose', mongoose);
       return mongoose;
     });
   }
@@ -43,6 +39,7 @@ async function connectDB() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
+    console.error('Error connecting to MongoDB:', e);
     cached.promise = null;
     throw e;
   }
