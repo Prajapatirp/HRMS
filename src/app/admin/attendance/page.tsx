@@ -470,7 +470,7 @@ export default function AdminAttendancePage() {
         </div>
 
         {/* Personal Attendance Section */}
-        {user.employeeId && (
+        {user.employeeId && user.role !== 'admin' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
