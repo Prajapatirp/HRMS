@@ -2,16 +2,20 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ILeave extends Document {
   employeeId: string;
-  leaveType: 'sick' | 'vacation' | 'personal' | 'maternity' | 'paternity' | 'bereavement' | 'other';
+  leaveType: 'pto' | 'lop' | 'comp-off' | 'sick' | 'vacation' | 'personal' | 'maternity' | 'paternity' | 'bereavement' | 'other';
   startDate: Date;
   endDate: Date;
   totalDays: number;
+  partialDays?: number; // For partial day leaves
   reason: string;
-  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled' | 'processed';
   approvedBy?: string;
   approvedAt?: Date;
+  rejectedBy?: string;
+  rejectedAt?: Date;
   rejectionReason?: string;
   attachments?: string[];
+  processedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +28,7 @@ const LeaveSchema: Schema = new Schema({
   },
   leaveType: {
     type: String,
-    enum: ['sick', 'vacation', 'personal', 'maternity', 'paternity', 'bereavement', 'other'],
+    enum: ['pto', 'lop', 'comp-off', 'sick', 'vacation', 'personal', 'maternity', 'paternity', 'bereavement', 'other'],
     required: true,
   },
   startDate: {
@@ -39,13 +43,18 @@ const LeaveSchema: Schema = new Schema({
     type: Number,
     required: true,
   },
+  partialDays: {
+    type: Number,
+    min: 0,
+    max: 1,
+  },
   reason: {
     type: String,
     required: true,
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled'],
+    enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled', 'processed'],
     default: 'pending',
   },
   approvedBy: {
@@ -55,14 +64,28 @@ const LeaveSchema: Schema = new Schema({
   approvedAt: {
     type: Date,
   },
+  rejectedBy: {
+    type: String,
+    ref: 'Employee',
+  },
+  rejectedAt: {
+    type: Date,
+  },
   rejectionReason: {
     type: String,
   },
   attachments: [{
     type: String,
   }],
+  processedAt: {
+    type: Date,
+  },
 }, {
   timestamps: true,
 });
+
+// Index for efficient queries
+LeaveSchema.index({ employeeId: 1, status: 1 });
+LeaveSchema.index({ startDate: 1, endDate: 1 });
 
 export default mongoose.models.Leave || mongoose.model<ILeave>('Leave', LeaveSchema);
