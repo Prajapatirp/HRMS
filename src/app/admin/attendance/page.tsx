@@ -168,6 +168,9 @@ export default function AdminAttendancePage() {
       const queryParams = new URLSearchParams();
       queryParams.append('month', month.toString());
       queryParams.append('year', year.toString());
+      // Set a high limit to get all records for the month (max 31 days)
+      queryParams.append('limit', '100');
+      queryParams.append('page', '1');
       const selectedEmployeeId = calendarEmployeeId || filters.employeeId;
       if (selectedEmployeeId) {
         queryParams.append('employeeId', selectedEmployeeId);
@@ -256,6 +259,11 @@ export default function AdminAttendancePage() {
   const applyFilters = () => {
     setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchAttendance(1);
+    // Refresh calendar if it's open and showing the same employee
+    if (calendarOpen && token) {
+      const currentDate = new Date();
+      fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -489,6 +497,13 @@ export default function AdminAttendancePage() {
       fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
     }
   }, [calendarEmployeeId, calendarOpen, token, fetchCalendarAttendance]);
+
+  // Sync calendar employee selection with main filters when main filter changes
+  useEffect(() => {
+    if (filters.employeeId && filters.employeeId !== calendarEmployeeId) {
+      setCalendarEmployeeId(filters.employeeId);
+    }
+  }, [filters.employeeId, calendarEmployeeId]);
 
   if (!user) {
     return <div>Please log in to view this page.</div>;

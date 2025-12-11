@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AttendanceRecord {
@@ -33,7 +33,13 @@ export default function AttendanceCalendar({
   useEffect(() => {
     const attendanceMap = new Map<string, string>();
     attendance.forEach((record) => {
-      const dateKey = new Date(record.date).toISOString().split('T')[0];
+      // Handle both string and Date objects
+      const recordDate = typeof record.date === 'string' ? new Date(record.date) : new Date(record.date);
+      // Normalize to YYYY-MM-DD format
+      const year = recordDate.getFullYear();
+      const month = String(recordDate.getMonth() + 1).padStart(2, '0');
+      const day = String(recordDate.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
       attendanceMap.set(dateKey, record.status);
     });
     setCalendarAttendance(attendanceMap);
@@ -105,7 +111,11 @@ export default function AttendanceCalendar({
 
   const formatDateKey = (day: number) => {
     const date = new Date(year, month, day);
-    return date.toISOString().split('T')[0];
+    // Normalize to YYYY-MM-DD format to match the map keys
+    const dateYear = date.getFullYear();
+    const dateMonth = String(date.getMonth() + 1).padStart(2, '0');
+    const dateDay = String(date.getDate()).padStart(2, '0');
+    return `${dateYear}-${dateMonth}-${dateDay}`;
   };
 
   const goToPreviousMonth = () => {

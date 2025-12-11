@@ -60,6 +60,14 @@ async function checkOut(req: AuthenticatedRequest) {
     attendance.checkOut = checkOutTime;
     attendance.totalHours = Math.round(diffHours * 100) / 100;
     
+    // Mark as half-day if working hours are less than 5 hours
+    if (diffHours < 5) {
+      attendance.status = 'half-day';
+    } else if (attendance.status === 'absent') {
+      // If status was absent but they checked in and out, mark as present
+      attendance.status = 'present';
+    }
+    
     // Calculate overtime (assuming 8 hours is standard)
     if (diffHours > 8) {
       attendance.overtimeHours = Math.round((diffHours - 8) * 100) / 100;
