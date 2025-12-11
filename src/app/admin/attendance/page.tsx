@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Clock, CheckCircle, XCircle, Search, Filter, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Search, Filter, User, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 
 interface AttendanceRecord {
   _id: string;
@@ -52,6 +53,10 @@ export default function AdminAttendancePage() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarAttendance, setCalendarAttendance] = useState<AttendanceRecord[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarEmployeeId, setCalendarEmployeeId] = useState<string>('');
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -156,6 +161,36 @@ export default function AdminAttendancePage() {
       console.error('Failed to fetch personal attendance data:', error);
     }
   }, [token]);
+
+  const fetchCalendarAttendance = useCallback(async (year: number, month: number) => {
+    try {
+      setCalendarLoading(true);
+      const queryParams = new URLSearchParams();
+      queryParams.append('month', month.toString());
+      queryParams.append('year', year.toString());
+      const selectedEmployeeId = calendarEmployeeId || filters.employeeId;
+      if (selectedEmployeeId) {
+        queryParams.append('employeeId', selectedEmployeeId);
+      }
+
+      const response = await fetch(`/api/attendance?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCalendarAttendance(data.attendance || []);
+      } else {
+        console.error('Failed to fetch calendar attendance data');
+      }
+    } catch (error) {
+      console.error('Failed to fetch calendar attendance data:', error);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, [token, calendarEmployeeId, filters.employeeId]);
 
   const handleCheckIn = async () => {
     setCheckingIn(true);
@@ -447,6 +482,14 @@ export default function AdminAttendancePage() {
     }
   }, [token, user, fetchEmployees, fetchPersonalAttendance]);
 
+  // Fetch calendar data when employee selection changes or calendar opens
+  useEffect(() => {
+    if (calendarOpen && token) {
+      const currentDate = new Date();
+      fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    }
+  }, [calendarEmployeeId, calendarOpen, token, fetchCalendarAttendance]);
+
   if (!user) {
     return <div>Please log in to view this page.</div>;
   }
@@ -693,6 +736,62 @@ export default function AdminAttendancePage() {
                   Clear Filters
                 </Button>
               </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Calendar View */}
+        <Card>
+          <CardHeader>
+            <button
+              onClick={() => setCalendarOpen(!calendarOpen)}
+              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+            >
+              <CardTitle className="flex items-center space-x-2">
+                <CalendarIcon className="h-5 w-5" />
+                <span>Calendar View</span>
+              </CardTitle>
+              {calendarOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+          </CardHeader>
+          {calendarOpen && (
+            <CardContent>
+              <div className="mb-4">
+                <Label htmlFor="calendarEmployee" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Select Employee
+                </Label>
+                <Select
+                  id="calendarEmployee"
+                  value={calendarEmployeeId}
+                  onChange={(e) => {
+                    setCalendarEmployeeId(e.target.value);
+                    // Reset calendar attendance when employee changes
+                    setCalendarAttendance([]);
+                  }}
+                  className="w-full max-w-xs"
+                >
+                  <option value="">All employees</option>
+                  {employees.map((emp) => (
+                    <option key={emp.employeeId} value={emp.employeeId}>
+                      {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <AttendanceCalendar
+                attendance={calendarAttendance.map(record => ({
+                  date: record.date,
+                  status: record.status as 'present' | 'absent' | 'late' | 'half-day' | 'holiday'
+                }))}
+                loading={calendarLoading}
+                employeeId={calendarEmployeeId || filters.employeeId || undefined}
+                token={token}
+                onMonthChange={fetchCalendarAttendance}
+              />
             </CardContent>
           )}
         </Card>

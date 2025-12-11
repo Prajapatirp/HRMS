@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Clock, CheckCircle, XCircle, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Search, Filter, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDateTime, formatDate } from '@/lib/utils';
+import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 
 interface AttendanceRecord {
   _id: string;
@@ -47,6 +48,9 @@ export default function AttendancePage() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarAttendance, setCalendarAttendance] = useState<AttendanceRecord[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -182,6 +186,32 @@ export default function AttendancePage() {
 
   const handlePageChange = (newPage: number) => {
     fetchAttendance(newPage);
+  };
+
+  const fetchCalendarAttendance = async (year: number, month: number) => {
+    try {
+      setCalendarLoading(true);
+      const queryParams = new URLSearchParams();
+      queryParams.append('month', month.toString());
+      queryParams.append('year', year.toString());
+
+      const response = await fetch(`/api/attendance?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCalendarAttendance(data.attendance || []);
+      } else {
+        console.error('Failed to fetch calendar attendance data');
+      }
+    } catch (error) {
+      console.error('Failed to fetch calendar attendance data:', error);
+    } finally {
+      setCalendarLoading(false);
+    }
   };
 
   // Define columns for attendance table
@@ -575,6 +605,39 @@ export default function AttendancePage() {
                   Clear Filters
                 </Button>
               </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Calendar View */}
+        <Card>
+          <CardHeader>
+            <button
+              onClick={() => setCalendarOpen(!calendarOpen)}
+              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
+            >
+              <CardTitle className="flex items-center space-x-2">
+                <CalendarIcon className="h-5 w-5" />
+                <span>Calendar View</span>
+              </CardTitle>
+              {calendarOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+          </CardHeader>
+          {calendarOpen && (
+            <CardContent>
+              <AttendanceCalendar
+                attendance={calendarAttendance.map(record => ({
+                  date: record.date,
+                  status: record.status as 'present' | 'absent' | 'late' | 'half-day' | 'holiday'
+                }))}
+                loading={calendarLoading}
+                token={token}
+                onMonthChange={fetchCalendarAttendance}
+              />
             </CardContent>
           )}
         </Card>
