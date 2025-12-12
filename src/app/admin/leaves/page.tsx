@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,15 +48,9 @@ export default function AdminLeavesPage() {
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  useEffect(() => {
-    if (token && user?.role === 'admin') {
-      fetchLeaves();
-      fetchEmployees();
-    }
-  }, [token, user]);
-
-  const fetchLeaves = async () => {
+  const fetchLeaves = useCallback(async () => {
     try {
+      setLoading(true);
       const queryParams = new URLSearchParams();
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
       if (filters.status) queryParams.append('status', filters.status);
@@ -79,9 +73,9 @@ export default function AdminLeavesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, filters.employeeId, filters.status, filters.leaveType]);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       const response = await fetch('/api/employees', {
         headers: {
@@ -96,7 +90,7 @@ export default function AdminLeavesPage() {
     } catch (error) {
       console.error('Failed to fetch employees:', error);
     }
-  };
+  }, [token]);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev: any) => ({
@@ -105,8 +99,19 @@ export default function AdminLeavesPage() {
     }));
   };
 
+  useEffect(() => {
+    if (token && user?.role === 'admin') {
+      fetchEmployees();
+    }
+  }, [token, user, fetchEmployees]);
+
+  useEffect(() => {
+    if (token && user?.role === 'admin') {
+      fetchLeaves();
+    }
+  }, [token, user, fetchLeaves]);
+
   const applyFilters = () => {
-    setLoading(true);
     fetchLeaves();
   };
 

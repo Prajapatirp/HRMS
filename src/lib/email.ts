@@ -68,3 +68,47 @@ export const sendResetPasswordEmail = async (email: string, resetToken: string) 
   }
 };
 
+export const sendCheckoutReminderEmail = async (email: string, employeeName: string) => {
+  const mailOptions = {
+    from: 'admin@yopmail.com',
+    to: email,
+    subject: 'HRMS - Check-Out Reminder',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0;">HRMS Check-Out Reminder</h1>
+        </div>
+        <div style="padding: 30px; background-color: #f9fafb;">
+          <p style="font-size: 16px; color: #374151;">Hello ${employeeName},</p>
+          <p style="font-size: 16px; color: #374151;">
+            This is a reminder that you have checked in today but haven't checked out yet.
+          </p>
+          <p style="font-size: 16px; color: #374151;">
+            Please remember to check out before leaving for the day. If you don't check out before 12 AM, the system will automatically check you out, but it won't be counted in your attendance record.
+          </p>
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+            <p style="font-size: 14px; color: #92400e; margin: 0;">
+              <strong>Note:</strong> Auto-checkout at midnight will not be considered for attendance calculation.
+            </p>
+          </div>
+          <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
+            Best regards,<br>
+            HRMS Team
+          </p>
+        </div>
+        <div style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280;">
+          <p style="margin: 0;">This is an automated email. Please do not reply.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending checkout reminder email:', error);
+    throw new Error('Failed to send email');
+  }
+};
+
