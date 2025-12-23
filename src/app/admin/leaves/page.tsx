@@ -138,6 +138,18 @@ export default function AdminLeavesPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  useEffect(() => {
+    if (token && user?.role === 'admin') {
+      fetchEmployees();
+    }
+  }, [token, user, fetchEmployees]);
+
+  useEffect(() => {
+    if (token && user?.role === 'admin') {
+      fetchLeaves();
+    }
+  }, [token, user, fetchLeaves]);
+
   const applyFilters = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
     fetchLeaves(1, filters);

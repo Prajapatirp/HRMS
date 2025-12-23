@@ -9,6 +9,8 @@ export interface IAttendance extends Document {
   overtimeHours?: number;
   status: 'present' | 'absent' | 'late' | 'half-day' | 'holiday';
   notes?: string;
+  autoCheckout?: boolean;
+  reminderSent?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +46,14 @@ const AttendanceSchema: Schema = new Schema({
   },
   notes: {
     type: String,
+  },
+  autoCheckout: {
+    type: Boolean,
+    default: false,
+  },
+  reminderSent: {
+    type: Boolean,
+    default: false,
   },
 }, {
   timestamps: true,
