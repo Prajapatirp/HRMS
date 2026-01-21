@@ -29,7 +29,6 @@ export default function SettingsPage() {
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
-    leaveReminders: true,
     payrollAlerts: true,
     announcementAlerts: true,
   });
@@ -401,23 +400,6 @@ export default function SettingsPage() {
                 />
               </div>
 
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="leaveReminders">Leave Reminders</Label>
-                  <p className="text-sm text-gray-600">Get reminded about leave applications</p>
-                </div>
-                <input
-                  type="checkbox"
-                  id="leaveReminders"
-                  checked={notificationSettings.leaveReminders}
-                  onChange={(e) => setNotificationSettings({
-                    ...notificationSettings,
-                    leaveReminders: e.target.checked
-                  })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-              </div>
 
               <div className="flex items-center justify-between">
                 <div>

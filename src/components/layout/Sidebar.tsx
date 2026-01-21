@@ -30,7 +30,6 @@ const getNavigation = (userRole: string) => {
         { name: 'Dashboard', href: '/dashboard', icon: Home },
         { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
         { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
-        { name: 'Leave Management', href: '/leaves', icon: FileText },
         { name: 'Projects', href: '/admin/projects', icon: FileText },
         { name: 'Payroll', href: '/payroll', icon: DollarSign },
         { name: 'Performance', href: '/performance', icon: TrendingUp },
@@ -49,8 +48,6 @@ const getNavigation = (userRole: string) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Attendance', href: '/attendance', icon: Calendar },
     { name: 'Timesheets', href: '/timesheets', icon: Clock },
-
-    { name: 'Leave Management', href: '/leaves', icon: FileText },
     { name: 'Payroll', href: '/payroll', icon: DollarSign },
     { name: 'Performance', href: '/performance', icon: TrendingUp },
     { name: 'Notifications', href: '/notifications', icon: Bell },
@@ -75,7 +72,6 @@ const getAdminNavigation = () => {
     // { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
     // { name: 'Projects', href: '/admin/projects', icon: FileText },
     // { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
-    { name: 'Leaves', href: '/admin/leaves', icon: FileText },
     { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
   ];
 };

@@ -21,7 +21,6 @@ async function getNotificationSettings(req: NextRequest) {
     // Return notification settings (default values if not set)
     const notificationSettings = userDetails.notificationSettings || {
       emailNotifications: true,
-      leaveReminders: true,
       payrollAlerts: true,
       announcementAlerts: true,
     };
@@ -58,7 +57,6 @@ async function updateNotificationSettings(req: NextRequest) {
     // Update notification settings
     currentUser.notificationSettings = {
       emailNotifications: notificationSettings.emailNotifications || false,
-      leaveReminders: notificationSettings.leaveReminders || false,
       payrollAlerts: notificationSettings.payrollAlerts || false,
       announcementAlerts: notificationSettings.announcementAlerts || false,
     };

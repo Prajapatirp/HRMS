@@ -13,7 +13,6 @@ interface ReportData {
   newEmployees: number;
   departmentStats: Array<{ _id: string; count: number }>;
   attendanceStats: Array<{ _id: string; count: number }>;
-  leaveStats: Array<{ _id: string; count: number }>;
   payrollStats: Array<{ _id: string; count: number; totalAmount: number }>;
 }
 
@@ -96,7 +95,6 @@ SUMMARY:
 - Attendance Rate: ${reportData.attendanceStats ? 
   Math.round((reportData.attendanceStats.find(s => s._id === 'present')?.count || 0) / 
   (reportData.attendanceStats.reduce((sum, s) => sum + s.count, 0) || 1) * 100) : 0}%
-- Pending Leaves: ${reportData.leaveStats.find(s => s._id === 'pending')?.count || 0}
 - Total Payroll: ${formatCurrency(reportData.payrollStats.reduce((sum, s) => sum + s.totalAmount, 0))}
 
 DEPARTMENT DISTRIBUTION:
@@ -189,7 +187,6 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
                 </div>
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                  Leave history and trends
                 </div>
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
@@ -292,7 +289,6 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
                   <option value="attendance">Attendance Report</option>
                   <option value="payroll">Payroll Report</option>
                   <option value="performance">Performance Report</option>
-                  <option value="leave">Leave Report</option>
                 </select>
               </div>
               
@@ -350,21 +346,6 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
               </div>
               <p className="text-xs text-muted-foreground">
                 Current period
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {reportData?.leaveStats.find(s => s._id === 'pending')?.count || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting approval
               </p>
             </CardContent>
           </Card>

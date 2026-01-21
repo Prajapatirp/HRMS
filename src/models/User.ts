@@ -10,7 +10,6 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   notificationSettings?: {
     emailNotifications: boolean;
-    leaveReminders: boolean;
     payrollAlerts: boolean;
     announcementAlerts: boolean;
   };
@@ -52,10 +51,6 @@ const UserSchema: Schema = new Schema({
   },
   notificationSettings: {
     emailNotifications: {
-      type: Boolean,
-      default: true,
-    },
-    leaveReminders: {
       type: Boolean,
       default: true,
     },

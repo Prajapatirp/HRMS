@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Employee from '@/models/Employee';
 import Attendance from '@/models/Attendance';
-import Leave from '@/models/Leave';
 import Payroll from '@/models/Payroll';
 import { requireAuth } from '@/middleware/auth';
 
@@ -50,22 +49,6 @@ async function getDashboardStats(req: NextRequest) {
       },
     ]);
 
-    // Leave statistics
-    const leaveStats = await Leave.aggregate([
-      {
-        $match: {
-          startDate: { $lte: endDate },
-          endDate: { $gte: startDate },
-        },
-      },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
     // Payroll statistics
     const payrollStats = await Payroll.aggregate([
       {
@@ -84,13 +67,6 @@ async function getDashboardStats(req: NextRequest) {
     ]);
 
     // Recent activities
-    const recentLeaves = await Leave.find({
-      startDate: { $lte: endDate },
-      endDate: { $gte: startDate },
-    })
-      .sort({ createdAt: -1 })
-      .limit(5);
-
     const recentAttendance = await Attendance.find({
       date: { $gte: startDate, $lte: endDate },
     })
@@ -103,11 +79,9 @@ async function getDashboardStats(req: NextRequest) {
         newEmployees,
         departmentStats,
         attendanceStats,
-        leaveStats,
         payrollStats,
       },
       recentActivities: {
-        leaves: recentLeaves,
         attendance: recentAttendance,
       },
     });

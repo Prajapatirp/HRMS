@@ -13,7 +13,6 @@ async function testNotificationSettings() {
       console.log('✅ Admin user notification settings:');
       console.log(`   - Email: ${adminUser.email}`);
       console.log(`   - Email Notifications: ${adminUser.notificationSettings?.emailNotifications ?? 'default (true)'}`);
-      console.log(`   - Leave Reminders: ${adminUser.notificationSettings?.leaveReminders ?? 'default (true)'}`);
       console.log(`   - Payroll Alerts: ${adminUser.notificationSettings?.payrollAlerts ?? 'default (true)'}`);
       console.log(`   - Announcement Alerts: ${adminUser.notificationSettings?.announcementAlerts ?? 'default (true)'}`);
     }
@@ -26,7 +25,6 @@ async function testNotificationSettings() {
       console.log('✅ John user notification settings:');
       console.log(`   - Email: ${johnUser.email}`);
       console.log(`   - Email Notifications: ${johnUser.notificationSettings?.emailNotifications ?? 'default (true)'}`);
-      console.log(`   - Leave Reminders: ${johnUser.notificationSettings?.leaveReminders ?? 'default (true)'}`);
       console.log(`   - Payroll Alerts: ${johnUser.notificationSettings?.payrollAlerts ?? 'default (true)'}`);
       console.log(`   - Announcement Alerts: ${johnUser.notificationSettings?.announcementAlerts ?? 'default (true)'}`);
     }
@@ -52,7 +50,6 @@ async function testNotificationSettings() {
     console.log('');
     console.log('✅ Available Notification Settings:');
     console.log('   - ✅ Email Notifications');
-    console.log('   - ✅ Leave Reminders');
     console.log('   - ✅ Payroll Alerts');
     console.log('   - ✅ Announcement Alerts');
     console.log('   - ❌ Push Notifications (removed)');

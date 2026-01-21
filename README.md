@@ -8,7 +8,6 @@ A comprehensive Human Resource Management System built with Next.js, MongoDB, an
 
 - **Employee Management**: Complete employee profiles, organizational structure, and status tracking
 - **Attendance Management**: Daily check-in/check-out, attendance calendar, overtime tracking
-- **Leave Management**: Leave applications, approval workflow, leave balance tracking
 - **Payroll Management**: Salary calculations, deductions, allowances, and disbursement tracking
 - **Performance Management**: Goal setting, performance reviews, and appraisal system
 - **Notifications**: Company announcements, alerts, and automated reminders
@@ -23,7 +22,7 @@ A comprehensive Human Resource Management System built with Next.js, MongoDB, an
 - 🔍 Advanced search and filtering
 - 📈 Analytics and reporting
 - 🔔 Notification system
-- 📅 Calendar integration for attendance and leaves
+- 📅 Calendar integration for attendance
 
 ## Tech Stack
 
@@ -100,11 +99,6 @@ After setting up the database, you can create an admin account by registering th
 - `POST /api/attendance/check-in` - Check in
 - `POST /api/attendance/check-out` - Check out
 
-### Leave Management
-- `GET /api/leaves` - Get leave requests
-- `POST /api/leaves` - Create leave request
-- `POST /api/leaves/[id]/approve` - Approve/reject leave
-
 ### Payroll
 - `GET /api/payroll` - Get payroll records
 - `POST /api/payroll` - Generate payroll
@@ -125,8 +119,8 @@ After setting up the database, you can create an admin account by registering th
 
 - **Admin**: Full system access
 - **HR**: Employee management, payroll, performance reviews
-- **Manager**: Team management, leave approvals, performance reviews
-- **Employee**: Personal profile, attendance, leave applications
+- **Manager**: Team management, performance reviews
+- **Employee**: Personal profile, attendance
 
 ## Database Schema
 
@@ -135,7 +129,6 @@ The system uses MongoDB with the following main collections:
 - **Users**: Authentication and user management
 - **Employees**: Employee profiles and job information
 - **Attendance**: Daily attendance records
-- **Leaves**: Leave requests and approvals
 - **Payroll**: Salary and payment records
 - **Performance**: Performance reviews and appraisals
 - **Notifications**: System notifications and announcements

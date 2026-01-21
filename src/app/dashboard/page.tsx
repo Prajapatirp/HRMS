@@ -8,27 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Users, Calendar, FileText, DollarSign, TrendingUp, Clock } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import AddEmployeeModal from '@/components/employees/AddEmployeeModal';
-import ApplyLeaveModal from '@/components/leaves/ApplyLeaveModal';
 
 interface DashboardStats {
   totalEmployees: number;
   newEmployees: number;
   departmentStats: Array<{ _id: string; count: number }>;
   attendanceStats: Array<{ _id: string; count: number }>;
-  leaveStats: Array<{ _id: string; count: number }>;
   payrollStats: Array<{ _id: string; count: number; totalAmount: number }>;
 }
 
 interface RecentActivity {
-  leaves: Array<{
-    _id: string;
-    employeeId: string;
-    leaveType: string;
-    startDate: string;
-    endDate: string;
-    status: string;
-    createdAt: string;
-  }>;
   attendance: Array<{
     _id: string;
     employeeId: string;
@@ -46,7 +35,6 @@ export function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
-  const [showApplyLeaveModal, setShowApplyLeaveModal] = useState(false);
 
   const fetchDashboardStats = useCallback(async () => {
     try {
@@ -142,13 +130,6 @@ export function DashboardContent() {
     router.push('/attendance');
   };
 
-  const handleApplyLeave = () => {
-    if (user?.employeeId) {
-      setShowApplyLeaveModal(true);
-    } else {
-      alert('Employee profile not found. Please contact HR to set up your employee profile.');
-    }
-  };
 
   const handleViewReports = () => {
     router.push('/reports');
@@ -159,10 +140,6 @@ export function DashboardContent() {
     fetchDashboardStats(); // Refresh stats
   };
 
-  const handleApplyLeaveSuccess = () => {
-    setShowApplyLeaveModal(false);
-    fetchDashboardStats(); // Refresh stats
-  };
 
   return (
     <div className="space-y-6">
@@ -195,21 +172,6 @@ export function DashboardContent() {
             <div className="text-2xl font-bold">{getAttendancePercentage()}%</div>
             <p className="text-xs text-muted-foreground">
               Current month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.leaveStats.find(s => s._id === 'pending')?.count || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting approval
             </p>
           </CardContent>
         </Card>
@@ -279,41 +241,6 @@ export function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Recent Leave Requests</CardTitle>
-            <CardDescription>Latest leave applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentActivities?.leaves && recentActivities.leaves.length > 0 ? (
-                recentActivities.leaves.map((leave) => (
-                  <div key={leave._id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{leave.employeeId}</p>
-                      <p className="text-xs text-gray-600">{leave.leaveType}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        leave.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        leave.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {leave.status}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatDate(leave.startDate)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm">No recent leave requests</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Recent Attendance</CardTitle>
             <CardDescription>Latest attendance records</CardDescription>
           </CardHeader>
@@ -370,13 +297,6 @@ export function DashboardContent() {
               <span className="text-sm font-medium">Check In/Out</span>
             </button>
             <button 
-              onClick={handleApplyLeave}
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <FileText className="h-8 w-8 text-orange-600 mb-2" />
-              <span className="text-sm font-medium">Apply Leave</span>
-            </button>
-            <button 
               onClick={handleViewReports}
               className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
             >
@@ -392,11 +312,6 @@ export function DashboardContent() {
           isOpen={showAddEmployeeModal} 
           onClose={() => setShowAddEmployeeModal(false)} 
           onSuccess={handleAddEmployeeSuccess} 
-        />
-        <ApplyLeaveModal 
-          isOpen={showApplyLeaveModal} 
-          onClose={() => setShowApplyLeaveModal(false)} 
-          onSuccess={handleApplyLeaveSuccess} 
         />
     </div>
   );
