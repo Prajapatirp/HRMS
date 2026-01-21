@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Search, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Bell, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HeaderProps {

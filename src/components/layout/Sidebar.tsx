@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ChevronRight,
   X,
-  ChevronLeft,
 } from 'lucide-react';
 
 const getNavigation = (userRole: string) => {

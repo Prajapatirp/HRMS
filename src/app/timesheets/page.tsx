@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -81,19 +81,8 @@ export default function TimesheetsPage() {
     limit: '10',
   });
 
-  useEffect(() => {
-    if (!authLoading && user && token) {
-      fetchProjects();
-      if (user.role === 'admin' || user.role === 'hr') {
-        fetchEmployees();
-      }
-      fetchTimesheets(1);
-    }
-  }, [authLoading, user, token]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
       if (!token) {
         console.error('No token found');
         return;
@@ -114,9 +103,9 @@ export default function TimesheetsPage() {
     } catch (error) {
       console.error('Error fetching projects:', error);
     }
-  };
+  }, [token]);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       if (!token) return;
       const response = await fetch('/api/employees?limit=1000', {
@@ -132,9 +121,9 @@ export default function TimesheetsPage() {
     } catch (error) {
       console.error('Error fetching employees:', error);
     }
-  };
+  }, [token]);
 
-  const fetchTimesheets = async (page = 1) => {
+  const fetchTimesheets = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       if (!token) {
@@ -174,7 +163,17 @@ export default function TimesheetsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, token]);
+
+  useEffect(() => {
+    if (!authLoading && user && token) {
+      fetchProjects();
+      if (user.role === 'admin' || user.role === 'hr') {
+        fetchEmployees();
+      }
+      fetchTimesheets(1);
+    }
+  }, [authLoading, user, token, fetchProjects, fetchEmployees, fetchTimesheets]);
 
   const handlePageChange = (newPage: number) => {
     fetchTimesheets(newPage);

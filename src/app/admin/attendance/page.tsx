@@ -488,7 +488,7 @@ export default function AdminAttendancePage() {
         fetchPersonalAttendance();
       }
     }
-  }, [token, user, fetchEmployees, fetchPersonalAttendance]);
+  }, [token, user, fetchAttendance, fetchEmployees, fetchPersonalAttendance]);
 
   // Fetch calendar data when employee selection changes or calendar opens
   useEffect(() => {

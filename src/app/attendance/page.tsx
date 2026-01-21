@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,13 +58,7 @@ export default function AttendancePage() {
     limit: '10'
   });
 
-  useEffect(() => {
-    if (token) {
-      fetchAttendance();
-    }
-  }, [token]);
-
-  const fetchAttendance = async (page = 1) => {
+  const fetchAttendance = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
@@ -94,7 +88,13 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchAttendance();
+    }
+  }, [token, fetchAttendance]);
 
   const handleCheckIn = async () => {
     setCheckingIn(true);

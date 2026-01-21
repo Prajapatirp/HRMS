@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     // Decode token in case it was URL encoded and trim whitespace
     try {
       token = decodeURIComponent(token);
-    } catch (e) {
+    } catch (e: any) {
+      throw new Error(e);
       // Token might not be encoded, that's okay
     }
     token = token.trim();

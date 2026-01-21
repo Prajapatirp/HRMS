@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,13 +43,7 @@ export default function PayrollPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
 
-  useEffect(() => {
-    if (token) {
-      fetchPayroll();
-    }
-  }, [token]);
-
-  const fetchPayroll = async () => {
+  const fetchPayroll = useCallback(async () => {
     try {
       const response = await fetch('/api/payroll', {
         headers: {
@@ -66,7 +60,13 @@ export default function PayrollPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchPayroll();
+    }
+  }, [token, fetchPayroll]);
 
   const handleManualSuccess = () => {
     fetchPayroll(); // Refresh the payroll list

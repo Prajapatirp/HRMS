@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,14 +33,7 @@ export default function SettingsPage() {
     announcementAlerts: true,
   });
 
-  useEffect(() => {
-    if (user && token) {
-      fetchProfileData();
-      fetchNotificationSettings();
-    }
-  }, [user, token]);
-
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/profile', {
         headers: {
@@ -64,9 +57,9 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Failed to fetch profile data:', error);
     }
-  };
+  }, [token]);
 
-  const fetchNotificationSettings = async () => {
+  const fetchNotificationSettings = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/notifications', {
         headers: {
@@ -81,7 +74,14 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Failed to fetch notification settings:', error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (user && token) {
+      fetchProfileData();
+      fetchNotificationSettings();
+    }
+  }, [user, token, fetchProfileData, fetchNotificationSettings]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

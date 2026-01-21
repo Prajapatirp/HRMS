@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,14 +65,7 @@ export default function AdminPayrollPage() {
     status: ''
   });
 
-  useEffect(() => {
-    if (token && user?.role === 'admin') {
-      fetchPayroll();
-      fetchEmployees();
-    }
-  }, [token, user]);
-
-  const fetchPayroll = async () => {
+  const fetchPayroll = useCallback(async () => {
     try {
       const queryParams = new URLSearchParams();
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
@@ -97,9 +90,9 @@ export default function AdminPayrollPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, token]);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       const response = await fetch('/api/employees', {
         headers: {
@@ -114,7 +107,14 @@ export default function AdminPayrollPage() {
     } catch (error) {
       console.error('Failed to fetch employees:', error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token && user?.role === 'admin') {
+      fetchPayroll();
+      fetchEmployees();
+    }
+  }, [token, user, fetchPayroll, fetchEmployees]);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev: any) => ({
