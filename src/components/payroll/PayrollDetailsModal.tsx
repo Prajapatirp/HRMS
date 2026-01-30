@@ -2,12 +2,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Download, User, Calendar, DollarSign } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Download, User, Calendar, DollarSign } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import DynamicModal from '@/components/ui/dynamic-modal';
 
 interface PayrollRecord {
   _id: string;
+  employeeId?: string;
   month: number;
   year: number;
   basicSalary: number;
@@ -37,9 +39,10 @@ interface PayrollDetailsModalProps {
   onClose: () => void;
   payroll: PayrollRecord | null | any;
   onDownloadPDF: (payroll: PayrollRecord) => void;
+  employeeName?: string;
 }
 
-export default function PayrollDetailsModal({ isOpen, onClose, payroll, onDownloadPDF }: PayrollDetailsModalProps) {
+export default function PayrollDetailsModal({ isOpen, onClose, payroll, onDownloadPDF, employeeName }: PayrollDetailsModalProps) {
   if (!isOpen || !payroll) return null;
 
   const getMonthName = (month: number) => {
@@ -67,39 +70,40 @@ export default function PayrollDetailsModal({ isOpen, onClose, payroll, onDownlo
   const totalDeductions = Object.values(payroll.deductions).reduce((sum: any, val: any) => sum + val, 0);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5" />
-              <span>Payroll Details</span>
-            </CardTitle>
-            <CardDescription>
-              {getMonthName(payroll.month)} {payroll.year} - Detailed breakdown
-            </CardDescription>
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDownloadPDF(payroll)}
-              className="flex items-center space-x-1"
-            >
-              <Download className="h-4 w-4" />
-              <span>Download PDF</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <DynamicModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Payroll Details - ${getMonthName(payroll.month)} ${payroll.year}`}
+      maxWidth="max-w-4xl"
+      footer={
+        <>
+          <Button
+            variant="outline"
+            onClick={onClose}
+          >
+            Close
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => onDownloadPDF(payroll)}
+            className="flex items-center space-x-2"
+          >
+            <Download className="h-4 w-4" />
+            <span>Download PDF</span>
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-6">
+          {/* Employee Name Badge */}
+          {employeeName && (
+            <div className="flex items-center">
+              <span className="inline-block px-3 py-1 bg-gray-900 text-white text-sm font-medium rounded-full">
+                {employeeName}
+              </span>
+            </div>
+          )}
+
           {/* Header Information */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg">
@@ -227,18 +231,7 @@ export default function PayrollDetailsModal({ isOpen, onClose, payroll, onDownlo
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-            <Button onClick={() => onDownloadPDF(payroll)} className="flex items-center space-x-2">
-              <Download className="h-4 w-4" />
-              <span>Download PDF</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      </div>
+    </DynamicModal>
   );
 }

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Payroll from '@/models/Payroll';
-// import Employee from '@/models/Employee';
-// import Attendance from '@/models/Attendance';
+import Employee from '@/models/Employee';
 import { requireRole, requireAuth } from '@/middleware/auth';
 
 async function getPayroll(req: NextRequest) {
@@ -12,8 +11,12 @@ async function getPayroll(req: NextRequest) {
     const { user } = (req as any);
     const { searchParams } = new URL(req.url);
     const employeeId = searchParams.get('employeeId');
+    const employeeName = searchParams.get('employeeName');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
+    const status = searchParams.get('status');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
@@ -24,6 +27,35 @@ async function getPayroll(req: NextRequest) {
     if (user.role === 'admin' || user.role === 'hr') {
       if (employeeId) {
         query.employeeId = employeeId;
+      }
+      
+      // Search by employee name
+      if (employeeName) {
+        const employees = await Employee.find({
+          $or: [
+            { 'personalInfo.firstName': { $regex: employeeName, $options: 'i' } },
+            { 'personalInfo.lastName': { $regex: employeeName, $options: 'i' } },
+            { employeeId: { $regex: employeeName, $options: 'i' } }
+          ]
+        }).select('employeeId');
+        
+        const employeeIds = employees.map(emp => emp.employeeId);
+        if (employeeIds.length > 0) {
+          query.employeeId = { $in: employeeIds };
+        } else {
+          // No employees found, return empty result
+          return NextResponse.json({
+            payroll: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              pages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          });
+        }
       }
     } else {
       // Employee can only view their own payroll records
@@ -36,6 +68,19 @@ async function getPayroll(req: NextRequest) {
       query.employeeId = user.employeeId;
     }
     
+    // Date range filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+    
     if (month) {
       query.month = parseInt(month);
     }
@@ -43,11 +88,15 @@ async function getPayroll(req: NextRequest) {
     if (year) {
       query.year = parseInt(year);
     }
+    
+    if (status) {
+      query.status = status;
+    }
 
     const skip = (page - 1) * limit;
     
     const payroll = await Payroll.find(query)
-      .sort({ year: -1, month: -1 })
+      .sort({ year: -1, month: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -60,6 +109,8 @@ async function getPayroll(req: NextRequest) {
         limit,
         total,
         pages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
       },
     });
 
@@ -117,6 +168,16 @@ async function createPayroll(req: NextRequest) {
                      (payrollData.bonus || 0) - 
                      totalDeductions;
 
+    // Handle paid date
+    let paidAt: Date | undefined = undefined;
+    if (payrollData.status === 'paid') {
+      if (payrollData.paidDate) {
+        paidAt = new Date(payrollData.paidDate);
+      } else {
+        paidAt = new Date();
+      }
+    }
+
     const payroll = new Payroll({
       employeeId: payrollData.employeeId,
       month: payrollData.month,
@@ -138,6 +199,7 @@ async function createPayroll(req: NextRequest) {
       bonus: payrollData.bonus || 0,
       netSalary,
       status: payrollData.status || 'pending',
+      paidAt,
     });
 
     await payroll.save();

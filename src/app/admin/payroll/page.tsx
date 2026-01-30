@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { DollarSign, Download, Eye, Plus, Search, Filter } from 'lucide-react';
+import { DollarSign, Download, Eye, Plus, Search, Filter, Edit, CheckCircle2, X } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import ManualPayrollModal from '@/components/payroll/ManualPayrollModal';
 import PayrollDetailsModal from '@/components/payroll/PayrollDetailsModal';
 import { generatePayrollPDF } from '@/lib/pdfGenerator';
+import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 
 interface PayrollRecord {
   _id: string;
@@ -51,24 +52,47 @@ interface Employee {
 }
 
 export default function AdminPayrollPage() {
+  const router = useRouter();
   const { user, token } = useAuth();
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showManualModal, setShowManualModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusUpdateRecord, setStatusUpdateRecord] = useState<PayrollRecord | null>(null);
+  const [newStatus, setNewStatus] = useState<string>('');
+  const [paidDate, setPaidDate] = useState<string>('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   const [filters, setFilters] = useState({
     employeeId: '',
+    employeeName: '',
+    startDate: '',
+    endDate: '',
     month: '',
     year: new Date().getFullYear().toString(),
-    status: ''
+    status: '',
+    limit: '10'
   });
 
-  const fetchPayroll = useCallback(async () => {
+  const fetchPayroll = useCallback(async (page = 1) => {
     try {
+      setLoading(true);
       const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', filters.limit);
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
+      if (filters.employeeName) queryParams.append('employeeName', filters.employeeName);
+      if (filters.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters.endDate) queryParams.append('endDate', filters.endDate);
       if (filters.month) queryParams.append('month', filters.month);
       if (filters.year) queryParams.append('year', filters.year);
       if (filters.status) queryParams.append('status', filters.status);
@@ -82,6 +106,9 @@ export default function AdminPayrollPage() {
       if (response.ok) {
         const data = await response.json();
         setPayroll(data.payroll);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       } else {
         console.error('Failed to fetch payroll data');
       }
@@ -111,7 +138,7 @@ export default function AdminPayrollPage() {
 
   useEffect(() => {
     if (token && user?.role === 'admin') {
-      fetchPayroll();
+      fetchPayroll(1);
       fetchEmployees();
     }
   }, [token, user, fetchPayroll, fetchEmployees]);
@@ -124,13 +151,14 @@ export default function AdminPayrollPage() {
   };
 
   const applyFilters = () => {
-    setLoading(true);
-    fetchPayroll();
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchPayroll(1);
   };
 
-  const handleManualSuccess = () => {
-    fetchPayroll(); // Refresh the payroll list
+  const handlePageChange = (newPage: number) => {
+    fetchPayroll(newPage);
   };
+
 
   const handleViewDetails = (record: PayrollRecord) => {
     setSelectedPayroll(record);
@@ -144,6 +172,59 @@ export default function AdminPayrollPage() {
 
   const handleDownloadPDF = (record: PayrollRecord | any) => {
     generatePayrollPDF(record, user?.email);
+  };
+
+  const handleStatusClick = (record: PayrollRecord) => {
+    setStatusUpdateRecord(record);
+    setNewStatus(record.status);
+    // Set paid date if exists, or if status is 'paid' set today's date
+    if (record.paidAt) {
+      setPaidDate(new Date(record.paidAt).toISOString().split('T')[0]);
+    } else if (record.status === 'paid') {
+      setPaidDate(new Date().toISOString().split('T')[0]);
+    } else {
+      setPaidDate('');
+    }
+    setShowStatusModal(true);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!statusUpdateRecord) return;
+
+    try {
+      setUpdatingStatus(true);
+      const updateData: any = { status: newStatus };
+      if (newStatus === 'paid' && paidDate) {
+        updateData.paidDate = paidDate;
+      } else if (newStatus === 'paid' && !paidDate) {
+        // Use today's date if not provided
+        updateData.paidDate = new Date().toISOString().split('T')[0];
+      }
+
+      const response = await fetch(`/api/payroll/${statusUpdateRecord._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        setShowStatusModal(false);
+        setStatusUpdateRecord(null);
+        // Refresh the payroll list
+        fetchPayroll(pagination.page);
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status. Please try again.');
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -173,6 +254,205 @@ export default function AdminPayrollPage() {
     return months[month - 1];
   };
 
+  const payrollColumns: Column<PayrollRecord>[] = [
+    {
+      key: 'employeeId',
+      label: 'Employee',
+      minWidth: '150px',
+      render: (value) => (
+        <span className="font-medium">{getEmployeeName(value)}</span>
+      ),
+      mobileLabel: 'Employee',
+    },
+    {
+      key: 'month',
+      label: 'Period',
+      minWidth: '120px',
+      render: (value, record) => (
+        <span>{getMonthName(record.month)} {record.year}</span>
+      ),
+      mobileLabel: 'Period',
+    },
+    {
+      key: 'netSalary',
+      label: 'Net Salary',
+      minWidth: '120px',
+      render: (value) => (
+        <span className="font-semibold text-green-600">{formatCurrency(value)}</span>
+      ),
+      mobileLabel: 'Net Salary',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      minWidth: '100px',
+      render: (value) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(value)}`}>
+          {value}
+        </span>
+      ),
+      mobileLabel: 'Status',
+    },
+    {
+      key: 'paidAt',
+      label: 'Paid Date',
+      minWidth: '120px',
+      render: (value) => value ? (
+        <span>{formatDate(value)}</span>
+      ) : <span className="text-gray-400">-</span>,
+      mobileLabel: 'Paid Date',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      minWidth: '160px',
+      render: (_, record) => (
+        <div className="flex space-x-2">
+          <button
+            onClick={() => handleStatusClick(record)}
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Update Status"
+          >
+            <CheckCircle2 className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Update Status
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => router.push(`/admin/payroll/add?id=${record._id}`)}
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Edit Payroll"
+          >
+            <Edit className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Edit Payroll
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => handleViewDetails(record)}
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="View Details"
+          >
+            <Eye className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                View Details
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => handleDownloadPDF(record)}
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Download PDF"
+          >
+            <Download className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Download PDF
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+        </div>
+      ),
+      mobileLabel: 'Actions',
+      hideOnMobile: true,
+    },
+  ];
+
+  const renderPayrollMobileCard = (record: PayrollRecord) => {
+    return (
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Employee</p>
+          <p className="text-sm font-medium text-gray-900">{getEmployeeName(record.employeeId)}</p>
+        </div>
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Period</p>
+          <p className="text-sm text-gray-900">{getMonthName(record.month)} {record.year}</p>
+        </div>
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Net Salary</p>
+          <p className="text-sm font-semibold text-green-600">{formatCurrency(record.netSalary)}</p>
+        </div>
+        <div className="mb-3 pb-3 border-b">
+          <p className="text-xs text-gray-500 mb-1">Status</p>
+          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
+            {record.status}
+          </span>
+        </div>
+        {record.paidAt && (
+          <div className="mb-3 pb-3 border-b">
+            <p className="text-xs text-gray-500 mb-1">Paid Date</p>
+            <p className="text-sm text-gray-900">{formatDate(record.paidAt)}</p>
+          </div>
+        )}
+        <div className="flex space-x-2 mt-3">
+          <button
+            onClick={() => handleStatusClick(record)}
+            className="flex-1 relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Update Status"
+          >
+            <CheckCircle2 className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Update Status
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => handleViewDetails(record)}
+            className="flex-1 relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="View Details"
+          >
+            <Eye className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                View Details
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => handleDownloadPDF(record)}
+            className="flex-1 relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Download PDF"
+          >
+            <Download className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Download PDF
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (!user) {
     return <div>Please log in to view this page.</div>;
   }
@@ -197,7 +477,7 @@ export default function AdminPayrollPage() {
             <p className="text-gray-600">Manage all employees&apos; payroll records</p>
           </div>
           <Button 
-            onClick={() => setShowManualModal(true)}
+            onClick={() => router.push('/admin/payroll/add')}
             className="flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
@@ -263,9 +543,20 @@ export default function AdminPayrollPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div>
-                <Label htmlFor="employee">Employee</Label>
+                <Label htmlFor="employeeName">Employee Name</Label>
+                <Input
+                  id="employeeName"
+                  type="text"
+                  value={filters.employeeName}
+                  onChange={(e) => handleFilterChange('employeeName', e.target.value)}
+                  placeholder="Search by name or ID"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="employee">Employee (ID)</Label>
                 <Select
                   value={filters.employeeId}
                   onChange={(e) => handleFilterChange('employeeId', e.target.value)}
@@ -277,6 +568,26 @@ export default function AdminPayrollPage() {
                     </option>
                   ))}
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                />
               </div>
 
               <div>
@@ -335,140 +646,26 @@ export default function AdminPayrollPage() {
         <Card>
           <CardHeader>
             <CardTitle>Payroll Records</CardTitle>
-            <CardDescription>
-              Showing {payroll.length} payroll records
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {payroll.map((record: any) => (
-                  <div key={record._id} className="p-6 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">
-                          {getEmployeeName(record.employeeId)}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {getMonthName(record.month)} {record.year}
-                        </p>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
-                          {record.status}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600">
-                          {formatCurrency(record.netSalary)}
-                        </div>
-                        {record.paidAt && (
-                          <p className="text-sm text-gray-600">
-                            Paid on {formatDate(record.paidAt)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Earnings */}
-                      <div>
-                        <h4 className="font-medium text-green-600 mb-2">Earnings</h4>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>Basic Salary:</span>
-                            <span>{formatCurrency(record.basicSalary)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Housing Allowance:</span>
-                            <span>{formatCurrency(record.allowances.housing)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Transport Allowance:</span>
-                            <span>{formatCurrency(record.allowances.transport)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Medical Allowance:</span>
-                            <span>{formatCurrency(record.allowances.medical)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Overtime:</span>
-                            <span>{formatCurrency(record.overtime)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Bonus:</span>
-                            <span>{formatCurrency(record.bonus)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Deductions */}
-                      <div>
-                        <h4 className="font-medium text-red-600 mb-2">Deductions</h4>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>Tax:</span>
-                            <span>{formatCurrency(record.deductions.tax)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Insurance:</span>
-                            <span>{formatCurrency(record.deductions.insurance)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Loan:</span>
-                            <span>{formatCurrency(record.deductions.loan)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Other:</span>
-                            <span>{formatCurrency(record.deductions.other)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center space-x-1"
-                        onClick={() => handleViewDetails(record)}
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span>View Details</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center space-x-1"
-                        onClick={() => handleDownloadPDF(record)}
-                      >
-                        <Download className="h-4 w-4" />
-                        <span>Download PDF</span>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {payroll.length === 0 && !loading && (
-              <div className="text-center py-8">
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No payroll records</h3>
-                <p className="text-gray-600">No payroll records found for the selected filters.</p>
-              </div>
-            )}
+            <DynamicTable
+              data={payroll}
+              columns={payrollColumns}
+              loading={loading}
+              emptyMessage="No payroll records found for the selected filters."
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              recordsPerPage={filters.limit}
+              onRecordsPerPageChange={(limit) => {
+                handleFilterChange('limit', limit);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+                setTimeout(() => fetchPayroll(1), 100);
+              }}
+              keyExtractor={(record) => record._id}
+              mobileCardRender={renderPayrollMobileCard}
+            />
           </CardContent>
         </Card>
-
-        {/* Manual Payroll Modal */}
-        <ManualPayrollModal
-          isOpen={showManualModal}
-          onClose={() => setShowManualModal(false)}
-          onSuccess={handleManualSuccess}
-        />
 
         {/* Payroll Details Modal */}
         <PayrollDetailsModal
@@ -476,7 +673,87 @@ export default function AdminPayrollPage() {
           onClose={handleCloseDetails}
           payroll={selectedPayroll}
           onDownloadPDF={handleDownloadPDF}
+          employeeName={selectedPayroll ? getEmployeeName(selectedPayroll.employeeId) : undefined}
         />
+
+        {/* Status Update Modal */}
+        {showStatusModal && statusUpdateRecord && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => {
+            if (!updatingStatus) {
+              setShowStatusModal(false);
+              setStatusUpdateRecord(null);
+            }
+          }}>
+            <Card className="w-full max-w-md mx-4 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <CardHeader className="relative pb-4">
+                <button
+                  onClick={() => {
+                    if (!updatingStatus) {
+                      setShowStatusModal(false);
+                      setStatusUpdateRecord(null);
+                    }
+                  }}
+                  disabled={updatingStatus}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Close modal"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <CardTitle className="pr-8">Update Payroll Status</CardTitle>
+                <CardDescription className="pr-8">
+                  {getEmployeeName(statusUpdateRecord.employeeId)} - {getMonthName(statusUpdateRecord.month)} {statusUpdateRecord.year}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="statusSelect">Status</Label>
+                  <Select
+                    id="statusSelect"
+                    value={newStatus}
+                    onChange={(e) => {
+                      setNewStatus(e.target.value);
+                      // Clear paid date if status changes away from 'paid'
+                      if (e.target.value !== 'paid') {
+                        setPaidDate('');
+                      } else if (!paidDate) {
+                        // Set today's date if changing to 'paid' and no date set
+                        setPaidDate(new Date().toISOString().split('T')[0]);
+                      }
+                    }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="processed">Processed</option>
+                    <option value="paid">Paid</option>
+                  </Select>
+                </div>
+                {newStatus === 'paid' && (
+                  <div>
+                    <Label htmlFor="paidDateInput">Paid Date</Label>
+                    <Input
+                      id="paidDateInput"
+                      type="date"
+                      value={paidDate}
+                      onChange={(e) => setPaidDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                    {!paidDate && (
+                      <p className="text-xs text-gray-500 mt-1">Will use today's date if left empty</p>
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-end pt-4 border-t">
+                  <Button
+                    onClick={handleStatusUpdate}
+                    disabled={updatingStatus}
+                    className="min-w-[120px]"
+                  >
+                    {updatingStatus ? 'Updating...' : 'Update Status'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </Layout>
   );

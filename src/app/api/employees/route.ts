@@ -8,10 +8,10 @@ import { hashPassword } from '@/lib/auth';
 async function getEmployees(req: NextRequest) {
   try {
     await connectDB();
-    
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '100');
     const department = searchParams.get('department');
     const designation = searchParams.get('designation');
     const status = searchParams.get('status');
