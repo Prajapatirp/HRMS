@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { CheckCircle, XCircle, Search, Filter, User, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
+import FilterDrawer from '@/components/ui/filter-drawer';
 
 interface AttendanceRecord {
   _id: string;
@@ -52,7 +53,7 @@ export default function AdminAttendancePage() {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarAttendance, setCalendarAttendance] = useState<AttendanceRecord[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -259,11 +260,33 @@ export default function AdminAttendancePage() {
   const applyFilters = () => {
     setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchAttendance(1);
+    setFilterDrawerOpen(false);
     // Refresh calendar if it's open and showing the same employee
     if (calendarOpen && token) {
       const currentDate = new Date();
       fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
     }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      employeeId: '',
+      month: '',
+      year: new Date().getFullYear().toString(),
+      status: '',
+      limit: '10'
+    });
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
+    setTimeout(() => fetchAttendance(1), 100);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.employeeId) count++;
+    if (filters.month) count++;
+    if (filters.year && filters.year !== new Date().getFullYear().toString()) count++;
+    if (filters.status) count++;
+    return count;
   };
 
   const handlePageChange = (newPage: number) => {
@@ -643,117 +666,99 @@ export default function AdminAttendancePage() {
           </Card>
         )}
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
-            >
-              <CardTitle className="flex items-center space-x-2">
-                <Filter className="h-5 w-5" />
-                <span>Filters</span>
-              </CardTitle>
-              {filtersOpen ? (
-                <ChevronUp className="h-5 w-5 text-gray-500" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-gray-500" />
-              )}
-            </button>
-          </CardHeader>
-          {filtersOpen && (
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="employee" className="text-sm font-medium text-gray-700">Employee</Label>
-                  <Select
-                    value={filters.employeeId}
-                    onChange={(e) => handleFilterChange('employeeId', e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">All employees</option>
-                    {employees.map((emp) => (
-                      <option key={emp.employeeId} value={emp.employeeId}>
-                        {emp.personalInfo.firstName} {emp.personalInfo.lastName}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
+        {/* Filter Button */}
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </button>
+        </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="month" className="text-sm font-medium text-gray-700">Month</Label>
-                  <Select
-                    value={filters.month}
-                    onChange={(e) => handleFilterChange('month', e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">All months</option>
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const month = i + 1;
-                      return (
-                        <option key={month} value={month.toString()}>
-                          {new Date(2024, i).toLocaleString('default', { month: 'long' })}
-                        </option>
-                      );
-                    })}
-                  </Select>
-                </div>
+        {/* Filter Drawer */}
+        <FilterDrawer
+          isOpen={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+          title="Filters"
+          activeFilterCount={getActiveFilterCount()}
+          onApply={applyFilters}
+          onReset={clearFilters}
+        >
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="employee" className="text-gray-700 mb-1">Employee</Label>
+              <Select
+                id="employee"
+                value={filters.employeeId}
+                onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+                className="w-full"
+              >
+                <option value="">All employees</option>
+                {employees.map((emp) => (
+                  <option key={emp.employeeId} value={emp.employeeId}>
+                    {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="year" className="text-sm font-medium text-gray-700">Year</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    value={filters.year}
-                    onChange={(e) => handleFilterChange('year', e.target.value)}
-                    placeholder="2024"
-                    className="w-full"
-                  />
-                </div>
+            <div>
+              <Label htmlFor="month" className="text-gray-700 mb-1">Month</Label>
+              <Select
+                id="month"
+                value={filters.month}
+                onChange={(e) => handleFilterChange('month', e.target.value)}
+                className="w-full"
+              >
+                <option value="">All months</option>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const month = i + 1;
+                  return (
+                    <option key={month} value={month.toString()}>
+                      {new Date(2024, i).toLocaleString('default', { month: 'long' })}
+                    </option>
+                  );
+                })}
+              </Select>
+            </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
-                  <Select
-                    value={filters.status}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">All statuses</option>
-                    <option value="present">Present</option>
-                    <option value="absent">Absent</option>
-                    <option value="late">Late</option>
-                    <option value="half-day">Half Day</option>
-                    <option value="holiday">Holiday</option>
-                  </Select>
-                </div>
-              </div>
+            <div>
+              <Label htmlFor="year" className="text-gray-700 mb-1">Year</Label>
+              <Input
+                id="year"
+                type="number"
+                value={filters.year}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                placeholder="2024"
+                className="w-full"
+              />
+            </div>
 
-              <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
-                  <Search className="h-4 w-4" />
-                  <span>Apply Filters</span>
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setFilters({
-                      employeeId: '',
-                      month: '',
-                      year: new Date().getFullYear().toString(),
-                      status: '',
-                      limit: '10'
-                    });
-                    setPagination((prev: any) => ({ ...prev, page: 1 }));
-                    setTimeout(() => fetchAttendance(1), 100);
-                  }} 
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </CardContent>
-          )}
-        </Card>
+            <div>
+              <Label htmlFor="status" className="text-gray-700 mb-1">Status</Label>
+              <Select
+                id="status"
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full"
+              >
+                <option value="">All statuses</option>
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+                <option value="late">Late</option>
+                <option value="half-day">Half Day</option>
+                <option value="holiday">Holiday</option>
+              </Select>
+            </div>
+          </div>
+        </FilterDrawer>
 
         {/* Calendar View */}
         <Card>

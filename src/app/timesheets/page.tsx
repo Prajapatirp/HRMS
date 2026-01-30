@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
-import { Plus, Edit, Trash2, Filter, Calendar, User, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, Calendar, User, Briefcase, Send } from 'lucide-react';
+import FilterDrawer from '@/components/ui/filter-drawer';
 
 interface Project {
   _id: string;
@@ -52,7 +53,7 @@ export default function TimesheetsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTimesheet, setEditingTimesheet] = useState<Timesheet | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -189,6 +190,7 @@ export default function TimesheetsPage() {
   const applyFilters = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchTimesheets(1);
+    setFilterDrawerOpen(false);
   };
 
   const clearFilters = () => {
@@ -201,8 +203,16 @@ export default function TimesheetsPage() {
     };
     setFilters(clearedFilters);
     setPagination((prev) => ({ ...prev, page: 1 }));
-    // Need to rebuild query params for cleared filters
     setTimeout(() => fetchTimesheets(1), 100);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.employeeId) count++;
+    if (filters.projectId) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    return count;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -430,29 +440,51 @@ export default function TimesheetsPage() {
         <div className="flex space-x-2">
           {record.status === 'draft' && (
             <>
-              <Button
-                size="sm"
-                variant="outline"
+              <button
                 onClick={() => handleEdit(record)}
-                className="flex items-center space-x-1"
+                className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                title="Edit Timesheet"
               >
-                <Edit className="h-3 w-3" />
-                <span>Edit</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
+                <Edit className="h-4 w-4 text-gray-700" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Edit Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
+              <button
                 onClick={() => handleSubmitTimesheet(record._id)}
+                className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                title="Submit Timesheet"
               >
-                Submit
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
+                <Send className="h-4 w-4 text-gray-700" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Submit Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
+              <button
                 onClick={() => handleDelete(record._id)}
+                className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                title="Delete Timesheet"
               >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+                <Trash2 className="h-4 w-4 text-gray-700" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Delete Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
             </>
           )}
           {record.status === 'rejected' && record.rejectionReason && (
@@ -628,102 +660,91 @@ export default function TimesheetsPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
-          >
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </CardTitle>
-            {filtersOpen ? (
-              <ChevronUp className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
-        </CardHeader>
-        {filtersOpen && (
-          <CardContent>
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${(user?.role === 'admin' || user?.role === 'hr') ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
-              {(user?.role === 'admin' || user?.role === 'hr') && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="employeeId" className="text-sm font-medium text-gray-700">Employee</Label>
-                  <Select
-                    id="employeeId"
-                    value={filters.employeeId}
-                    onChange={(e) => handleFilterChange('employeeId', e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">All Employees</option>
-                    {employees.map((emp) => (
-                      <option key={emp.employeeId} value={emp.employeeId}>
-                        {emp.personalInfo.firstName} {emp.personalInfo.lastName}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              )}
+      {/* Filter Button */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setFilterDrawerOpen(true)}
+          className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          <Filter className="h-4 w-4" />
+          <span>Filters</span>
+          {getActiveFilterCount() > 0 && (
+            <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+              {getActiveFilterCount()}
+            </span>
+          )}
+        </button>
+      </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="projectId" className="text-sm font-medium text-gray-700">Project</Label>
-                <Select
-                  id="projectId"
-                  value={filters.projectId}
-                  onChange={(e) => handleFilterChange('projectId', e.target.value)}
-                  className="w-full"
-                >
-                  <option value="">All Projects</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
-                <Filter className="h-4 w-4" />
-                <span>Apply Filters</span>
-              </Button>
-              <Button 
-                onClick={clearFilters}
-                variant="outline"
-                className="w-full sm:w-auto"
+      {/* Filter Drawer */}
+      <FilterDrawer
+        isOpen={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        title="Filters"
+        activeFilterCount={getActiveFilterCount()}
+        onApply={applyFilters}
+        onReset={clearFilters}
+      >
+        <div className="space-y-4">
+          {(user?.role === 'admin' || user?.role === 'hr') && (
+            <div>
+              <Label htmlFor="employeeId" className="text-gray-700 mb-1">Employee</Label>
+              <Select
+                id="employeeId"
+                value={filters.employeeId}
+                onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+                className="w-full"
               >
-                Clear Filters
-              </Button>
+                <option value="">All Employees</option>
+                {employees.map((emp) => (
+                  <option key={emp.employeeId} value={emp.employeeId}>
+                    {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                  </option>
+                ))}
+              </Select>
             </div>
-          </CardContent>
-        )}
-      </Card>
+          )}
+
+          <div>
+            <Label htmlFor="projectId" className="text-gray-700 mb-1">Project</Label>
+            <Select
+              id="projectId"
+              value={filters.projectId}
+              onChange={(e) => handleFilterChange('projectId', e.target.value)}
+              className="w-full"
+            >
+              <option value="">All Projects</option>
+              {projects.map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="startDate" className="text-gray-700 mb-1">Start Date</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="endDate" className="text-gray-700 mb-1">End Date</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </FilterDrawer>
 
       {/* Timesheet Form */}
       {showForm && (

@@ -20,10 +20,10 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Mobile menu button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden hover:bg-gray-100 hover:text-blue-600 border border-gray-200 rounded-md transition-colors"
+            className="md:hidden bg-gray-50 hover:bg-gray-100 hover:text-blue-600 border border-gray-200 rounded-md transition-colors"
             aria-label="Toggle menu"
             title="Toggle menu"
           >
@@ -32,10 +32,10 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
           
           {/* Desktop sidebar toggle */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={onToggleSidebar}
-            className="hidden md:flex hover:bg-gray-100 hover:text-blue-600 border border-gray-200 rounded-md transition-colors"
+            className="hidden md:flex bg-gray-50 hover:bg-gray-100 hover:text-blue-600 border border-gray-200 rounded-md transition-colors"
             aria-label="Toggle sidebar"
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
@@ -56,7 +56,7 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="outline" size="icon" className="relative bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
           </Button>

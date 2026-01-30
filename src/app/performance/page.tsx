@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { TrendingUp, Plus, Star, Target, Award, Search, Filter, Eye, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, Plus, Star, Target, Award, Filter, Eye, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import CreateReviewModal from '@/components/performance/CreateReviewModal';
 import PerformanceDetailsModal from '@/components/performance/PerformanceDetailsModal';
 import EditPerformanceModal from '@/components/performance/EditPerformanceModal';
+import FilterDrawer from '@/components/ui/filter-drawer';
 
 interface PerformanceReview {
   _id: string;
@@ -69,6 +70,7 @@ export default function PerformancePage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState<PerformanceReview | null>(null);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [filters, setFilters] = useState({
     status: '',
     startDate: '',
@@ -131,6 +133,7 @@ export default function PerformancePage() {
   const applyFilters = () => {
     setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchPerformance(1);
+    setFilterDrawerOpen(false);
   };
 
   const clearFilters = () => {
@@ -144,7 +147,18 @@ export default function PerformancePage() {
       limit: '10'
     });
     setPagination((prev: any) => ({ ...prev, page: 1 }));
-    fetchPerformance(1);
+    setTimeout(() => fetchPerformance(1), 100);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.status) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    if (filters.minRating) count++;
+    if (filters.maxRating) count++;
+    if (filters.reviewedBy) count++;
+    return count;
   };
 
   const handlePageChange = (newPage: number) => {
@@ -279,117 +293,131 @@ export default function PerformancePage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filter Performance Reviews</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                >
-                  <option value="">All statuses</option>
-                  <option value="draft">Draft</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="reviewed">Reviewed</option>
-                  <option value="approved">Approved</option>
-                </Select>
-              </div>
+        {/* Filter Button */}
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </button>
+        </div>
 
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="limit">Records per page</Label>
-                <Select
-                  value={filters.limit}
-                  onChange={(e) => handleFilterChange('limit', e.target.value)}
-                >
-                  <option value="5">5 records</option>
-                  <option value="10">10 records</option>
-                  <option value="20">20 records</option>
-                  <option value="50">50 records</option>
-                </Select>
-              </div>
+        {/* Filter Drawer */}
+        <FilterDrawer
+          isOpen={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+          title="Filter Performance Reviews"
+          activeFilterCount={getActiveFilterCount()}
+          onApply={applyFilters}
+          onReset={clearFilters}
+        >
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="status" className="text-gray-700 mb-1">Status</Label>
+              <Select
+                id="status"
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full"
+              >
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="submitted">Submitted</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="approved">Approved</option>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <Label htmlFor="minRating">Min Rating</Label>
-                <Select
-                  value={filters.minRating}
-                  onChange={(e) => handleFilterChange('minRating', e.target.value)}
-                >
-                  <option value="">Any rating</option>
-                  <option value="1">1+ stars</option>
-                  <option value="2">2+ stars</option>
-                  <option value="3">3+ stars</option>
-                  <option value="4">4+ stars</option>
-                  <option value="5">5 stars</option>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="maxRating">Max Rating</Label>
-                <Select
-                  value={filters.maxRating}
-                  onChange={(e) => handleFilterChange('maxRating', e.target.value)}
-                >
-                  <option value="">Any rating</option>
-                  <option value="1">1 star</option>
-                  <option value="2">2 stars</option>
-                  <option value="3">3 stars</option>
-                  <option value="4">4 stars</option>
-                  <option value="5">5 stars</option>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="reviewedBy">Reviewed By</Label>
-                <Input
-                  id="reviewedBy"
-                  value={filters.reviewedBy}
-                  onChange={(e) => handleFilterChange('reviewedBy', e.target.value)}
-                  placeholder="Search reviewer"
-                />
-              </div>
+            <div>
+              <Label htmlFor="startDate" className="text-gray-700 mb-1">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full"
+              />
             </div>
 
-            <div className="mt-4 flex space-x-2">
-              <Button onClick={applyFilters} className="flex items-center space-x-2">
-                <Search className="h-4 w-4" />
-                <span>Apply Filters</span>
-              </Button>
-              <Button onClick={clearFilters} variant="outline">
-                Clear Filters
-              </Button>
+            <div>
+              <Label htmlFor="endDate" className="text-gray-700 mb-1">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full"
+              />
             </div>
-          </CardContent>
-        </Card>
+
+            <div>
+              <Label htmlFor="minRating" className="text-gray-700 mb-1">Min Rating</Label>
+              <Select
+                id="minRating"
+                value={filters.minRating}
+                onChange={(e) => handleFilterChange('minRating', e.target.value)}
+                className="w-full"
+              >
+                <option value="">Any rating</option>
+                <option value="1">1+ stars</option>
+                <option value="2">2+ stars</option>
+                <option value="3">3+ stars</option>
+                <option value="4">4+ stars</option>
+                <option value="5">5 stars</option>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="maxRating" className="text-gray-700 mb-1">Max Rating</Label>
+              <Select
+                id="maxRating"
+                value={filters.maxRating}
+                onChange={(e) => handleFilterChange('maxRating', e.target.value)}
+                className="w-full"
+              >
+                <option value="">Any rating</option>
+                <option value="1">1 star</option>
+                <option value="2">2 stars</option>
+                <option value="3">3 stars</option>
+                <option value="4">4 stars</option>
+                <option value="5">5 stars</option>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="reviewedBy" className="text-gray-700 mb-1">Reviewed By</Label>
+              <Input
+                id="reviewedBy"
+                value={filters.reviewedBy}
+                onChange={(e) => handleFilterChange('reviewedBy', e.target.value)}
+                placeholder="Search reviewer"
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="limit" className="text-gray-700 mb-1">Records per page</Label>
+              <Select
+                id="limit"
+                value={filters.limit}
+                onChange={(e) => handleFilterChange('limit', e.target.value)}
+                className="w-full"
+              >
+                <option value="5">5 records</option>
+                <option value="10">10 records</option>
+                <option value="20">20 records</option>
+                <option value="50">50 records</option>
+              </Select>
+            </div>
+          </div>
+        </FilterDrawer>
 
         {/* Performance Reviews Table */}
         <Card>

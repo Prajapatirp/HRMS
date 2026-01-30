@@ -11,8 +11,9 @@ import { Select } from '@/components/ui/select';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-table';
 import DynamicModal from '@/components/ui/dynamic-modal';
-import { Check, X, Eye, Clock, FileText, Filter, Calendar, User, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, X, Eye, Clock, FileText, Filter, Calendar, User, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import FilterDrawer from '@/components/ui/filter-drawer';
 
 interface Project {
   _id: string;
@@ -58,7 +59,7 @@ export default function AdminTimesheetsPage() {
   const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -191,6 +192,7 @@ export default function AdminTimesheetsPage() {
   const applyFilters = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchTimesheets(1);
+    setFilterDrawerOpen(false);
   };
 
   const clearFilters = () => {
@@ -205,6 +207,16 @@ export default function AdminTimesheetsPage() {
     setFilters(clearedFilters);
     setPagination((prev) => ({ ...prev, page: 1 }));
     setTimeout(() => fetchTimesheets(1), 100);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.projectId) count++;
+    if (filters.employeeId) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    if (filters.status) count++;
+    return count;
   };
 
   const handleApprove = async (timesheetId: string) => {
@@ -379,75 +391,113 @@ export default function AdminTimesheetsPage() {
       minWidth: '150px',
       render: (_, record) => (
         <div className="flex space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
+          <button
             onClick={() => handleViewDetails(record)}
-            className="flex items-center space-x-1"
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="View Details"
+            disabled={processing === record._id}
           >
-            <Eye className="h-3 w-3" />
-            <span>View</span>
-          </Button>
+            <Eye className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                View Details
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
           {record.status === 'submitted' && (
             <>
-              <Button
-                size="sm"
-                variant="outline"
+              <button
                 onClick={() => handleApprove(record._id)}
                 disabled={processing === record._id}
-                className="text-green-600 hover:text-green-700 flex items-center space-x-1"
+                className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Approve Timesheet"
               >
-                <Check className="h-3 w-3" />
-                <span>Approve</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleViewDetails(record)}
+                <Check className="h-4 w-4 text-green-600" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Approve Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={() => handleReject(record._id)}
                 disabled={processing === record._id}
-                className="text-red-600 hover:text-red-700 flex items-center space-x-1"
+                className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Reject Timesheet"
               >
-                <X className="h-3 w-3" />
-                <span>Reject</span>
-              </Button>
+                <X className="h-4 w-4 text-red-600" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Reject Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
             </>
           )}
         </div>
       ),
       mobileLabel: 'Actions',
       mobileRender: (_, record) => (
-        <div className="flex flex-col space-y-2 pt-2">
-          <Button
-            size="sm"
-            variant="outline"
+        <div className="flex space-x-2 pt-2">
+          <button
             onClick={() => handleViewDetails(record)}
-            className="w-full flex items-center justify-center space-x-1"
+            className="flex-1 relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="View Details"
+            disabled={processing === record._id}
           >
-            <Eye className="h-3 w-3" />
-            <span>View</span>
-          </Button>
+            <Eye className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                View Details
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
           {record.status === 'submitted' && (
             <>
-              <Button
-                size="sm"
-                variant="outline"
+              <button
                 onClick={() => handleApprove(record._id)}
                 disabled={processing === record._id}
-                className="w-full text-green-600 hover:text-green-700 flex items-center justify-center space-x-1"
+                className="flex-1 relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Approve Timesheet"
               >
-                <Check className="h-3 w-3" />
-                <span>Approve</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleViewDetails(record)}
+                <Check className="h-4 w-4 text-green-600" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Approve Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={() => handleReject(record._id)}
                 disabled={processing === record._id}
-                className="w-full text-red-600 hover:text-red-700 flex items-center justify-center space-x-1"
+                className="flex-1 relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Reject Timesheet"
               >
-                <X className="h-3 w-3" />
-                <span>Reject</span>
-              </Button>
+                <X className="h-4 w-4 text-red-600" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                    Reject Timesheet
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                    <div className="border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+              </button>
             </>
           )}
         </div>
@@ -596,115 +646,104 @@ export default function AdminTimesheetsPage() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
-          >
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </CardTitle>
-            {filtersOpen ? (
-              <ChevronUp className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
-        </CardHeader>
-        {filtersOpen && (
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="employeeFilter" className="text-sm font-medium text-gray-700">Employee</Label>
-                <Select
-                  id="employeeFilter"
-                  value={filters.employeeId}
-                  onChange={(e) => handleFilterChange('employeeId', e.target.value)}
-                  className="w-full"
-                >
-                  <option value="">All Employees</option>
-                  {employees.map((employee) => (
-                    <option key={employee._id} value={employee.employeeId}>
-                      {employee.personalInfo.firstName} {employee.personalInfo.lastName}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+      {/* Filter Button */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setFilterDrawerOpen(true)}
+          className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          <Filter className="h-4 w-4" />
+          <span>Filters</span>
+          {getActiveFilterCount() > 0 && (
+            <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+              {getActiveFilterCount()}
+            </span>
+          )}
+        </button>
+      </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="projectFilter" className="text-sm font-medium text-gray-700">Project</Label>
-                <Select
-                  id="projectFilter"
-                  value={filters.projectId}
-                  onChange={(e) => handleFilterChange('projectId', e.target.value)}
-                  className="w-full"
-                >
-                  <option value="">All Projects</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+      {/* Filter Drawer */}
+      <FilterDrawer
+        isOpen={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        title="Filters"
+        activeFilterCount={getActiveFilterCount()}
+        onApply={applyFilters}
+        onReset={clearFilters}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="employeeFilter" className="text-gray-700 mb-1">Employee</Label>
+            <Select
+              id="employeeFilter"
+              value={filters.employeeId}
+              onChange={(e) => handleFilterChange('employeeId', e.target.value)}
+              className="w-full"
+            >
+              <option value="">All Employees</option>
+              {employees.map((employee) => (
+                <option key={employee._id} value={employee.employeeId}>
+                  {employee.personalInfo.firstName} {employee.personalInfo.lastName}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="w-full"
-                />
-              </div>
+          <div>
+            <Label htmlFor="projectFilter" className="text-gray-700 mb-1">Project</Label>
+            <Select
+              id="projectFilter"
+              value={filters.projectId}
+              onChange={(e) => handleFilterChange('projectId', e.target.value)}
+              className="w-full"
+            >
+              <option value="">All Projects</option>
+              {projects.map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.name}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="w-full"
-                />
-              </div>
+          <div>
+            <Label htmlFor="startDate" className="text-gray-700 mb-1">Start Date</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              className="w-full"
+            />
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">Status</Label>
-                <Select
-                  id="statusFilter"
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="w-full"
-                >
-                  <option value="">All Status</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </Select>
-              </div>
-            </div>
+          <div>
+            <Label htmlFor="endDate" className="text-gray-700 mb-1">End Date</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              className="w-full"
+            />
+          </div>
 
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
-                <Filter className="h-4 w-4" />
-                <span>Apply Filters</span>
-              </Button>
-              <Button 
-                onClick={clearFilters}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          </CardContent>
-        )}
-      </Card>
+          <div>
+            <Label htmlFor="statusFilter" className="text-gray-700 mb-1">Status</Label>
+            <Select
+              id="statusFilter"
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              className="w-full"
+            >
+              <option value="">All Status</option>
+              <option value="submitted">Submitted</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+          </div>
+        </div>
+      </FilterDrawer>
 
       {/* Timesheets Table */}
       <Card>

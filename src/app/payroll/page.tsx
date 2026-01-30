@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DollarSign, Download, Eye } from 'lucide-react';
+import { DollarSign, Download, Eye, Filter } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PayrollDetailsModal from '@/components/payroll/PayrollDetailsModal';
 import { generatePayrollPDF } from '@/lib/pdfGenerator';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
+import FilterDrawer from '@/components/ui/filter-drawer';
 
 interface PayrollRecord {
   _id: string;
@@ -53,6 +54,7 @@ export default function PayrollPage() {
     hasNext: false,
     hasPrev: false,
   });
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -104,6 +106,24 @@ export default function PayrollPage() {
   const applyFilters = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchPayroll(1);
+    setFilterDrawerOpen(false);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      startDate: '',
+      endDate: '',
+      limit: '10'
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setTimeout(() => fetchPayroll(1), 100);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    return count;
   };
 
   const handlePageChange = (newPage: number) => {
@@ -190,24 +210,36 @@ export default function PayrollPage() {
       minWidth: '150px',
       render: (_, record) => (
         <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => handleViewDetails(record)}
-            className="flex items-center space-x-1"
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="View Details"
           >
-            <Eye className="h-4 w-4" />
-            <span>View</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+            <Eye className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                View Details
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+          <button
             onClick={() => handleDownloadPDF(record)}
-            className="flex items-center space-x-1"
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Download PDF"
           >
-            <Download className="h-4 w-4" />
-            <span>PDF</span>
-          </Button>
+            <Download className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Download PDF
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
         </div>
       ),
       mobileLabel: 'Actions',
@@ -322,41 +354,55 @@ export default function PayrollPage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange('startDate', e.target.value)}
-                />
-              </div>
+        {/* Filter Button */}
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </button>
+        </div>
 
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange('endDate', e.target.value)}
-                />
-              </div>
+        {/* Filter Drawer */}
+        <FilterDrawer
+          isOpen={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+          title="Filters"
+          activeFilterCount={getActiveFilterCount()}
+          onApply={applyFilters}
+          onReset={clearFilters}
+        >
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="startDate" className="text-gray-700 mb-1">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={filters.startDate}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange('startDate', e.target.value)}
+                className="w-full"
+              />
             </div>
 
-            <div className="mt-4">
-              <Button onClick={applyFilters} className="flex items-center space-x-2">
-                <span>Apply Filters</span>
-              </Button>
+            <div>
+              <Label htmlFor="endDate" className="text-gray-700 mb-1">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={filters.endDate}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange('endDate', e.target.value)}
+                className="w-full"
+              />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FilterDrawer>
 
         {/* Payroll Records */}
         <Card>
