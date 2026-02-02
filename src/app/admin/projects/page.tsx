@@ -439,7 +439,7 @@ export default function AdminProjectsPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Project Management</h1>
-            <p className="text-gray-600 mt-1">Create and manage projects for timesheet tracking</p>
+            {/* <p className="text-gray-600 mt-1">Create and manage projects for timesheet tracking</p> */}
           </div>
           <Button
             onClick={() => {

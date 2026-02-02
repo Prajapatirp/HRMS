@@ -503,8 +503,8 @@ export default function AdminPayrollPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin - Payroll Management</h1>
-            <p className="text-gray-600">Manage all employees&apos; payroll records</p>
+            <h1 className="text-3xl font-bold text-gray-900">Payroll Management</h1>
+            {/* <p className="text-gray-600">Manage all employees&apos; payroll records</p> */}
           </div>
           <Button 
             onClick={() => router.push('/admin/payroll/add')}

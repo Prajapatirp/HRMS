@@ -594,7 +594,7 @@ export default function AdminTimesheetsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Timesheet Review</h1>
-          <p className="text-gray-600 mt-1">Review and approve employee timesheets</p>
+          {/* <p className="text-gray-600 mt-1">Review and approve employee timesheets</p> */}
         </div>
       </div>
 

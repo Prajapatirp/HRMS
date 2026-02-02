@@ -646,12 +646,6 @@ export default function AttendancePage() {
         <Card>
           <CardHeader>
             <CardTitle>Attendance History</CardTitle>
-            <CardDescription>
-              Showing {attendance.length} of {pagination.total} records
-              {pagination.total > 0 && (
-                <span> (Page {pagination.page} of {pagination.pages})</span>
-              )}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <DynamicTable

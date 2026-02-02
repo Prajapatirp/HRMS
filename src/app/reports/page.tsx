@@ -236,7 +236,7 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p className="text-gray-600">Generate comprehensive HR reports and analytics</p>
+            {/* <p className="text-gray-600">Generate comprehensive HR reports and analytics</p> */}
           </div>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
@@ -268,7 +268,7 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p className="text-gray-600">Generate comprehensive HR reports and analytics</p>
+            {/* <p className="text-gray-600">Generate comprehensive HR reports and analytics</p> */}
           </div>
         </div>
 

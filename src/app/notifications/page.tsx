@@ -125,14 +125,14 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-gray-600">
+            {/* <p className="text-gray-600">
               Stay updated with company announcements and important updates
               {unreadCount > 0 && (
                 <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-sm rounded-full">
                   {unreadCount} unread
                 </span>
               )}
-            </p>
+            </p> */}
           </div>
         </div>
 

@@ -223,7 +223,7 @@ export default function PerformancePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Performance Management</h1>
-            <p className="text-gray-600">Track your performance reviews and goals</p>
+            {/* <p className="text-gray-600">Track your performance reviews and goals</p>s */}
           </div>
           {(user.role === 'admin' || user.role === 'hr' || user.role === 'manager') && (
             <Button 

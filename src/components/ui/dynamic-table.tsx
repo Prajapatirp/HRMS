@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 export interface Column<T = any> {
   key: string;
@@ -38,6 +38,86 @@ interface DynamicTableProps<T = any> {
   keyExtractor?: (record: T, index: number) => string;
   mobileCardRender?: (record: T, index: number) => React.ReactNode; // Custom mobile card render
   className?: string;
+  stickyHeader?: boolean; // Enable sticky header
+  maxHeight?: string; // Max height for table container when sticky header is enabled
+}
+
+// Custom Records Per Page Dropdown Component
+function RecordsPerPageDropdown({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const options = ['10', '20', '50', '100'];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative z-50" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-24 bg-blue-50 border border-blue-300 text-blue-600 rounded-md px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer flex items-center justify-between"
+      >
+        <span>{value} / page</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+            style={{ pointerEvents: 'auto' }}
+          />
+          <div 
+            className="absolute right-0 bottom-full mb-1 w-32 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden"
+            style={{ zIndex: 9999 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="py-1">
+              {options.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange(option);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    value === option
+                      ? 'bg-blue-50 text-gray-700 border-l-2 border-blue-500'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {option} / page
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function DynamicTable<T = any>({
@@ -52,6 +132,8 @@ export default function DynamicTable<T = any>({
   keyExtractor = (_, index) => `row-${index}`,
   mobileCardRender,
   className = '',
+  stickyHeader = false,
+  maxHeight = 'calc(100vh - 300px)',
 }: DynamicTableProps<T>) {
   // Default mobile card render if not provided
   const defaultMobileCardRender = (record: T, index: number) => {
@@ -106,20 +188,24 @@ export default function DynamicTable<T = any>({
   return (
     <div className={className}>
       {/* Desktop/Tablet Table View */}
-      <div className="hidden md:block overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead 
-                  key={column.key}
-                  className={column.minWidth ? `min-w-[${column.minWidth}]` : ''}
-                >
-                  {column.label}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+      <div 
+        className={`hidden md:block ${stickyHeader ? 'overflow-auto' : 'overflow-x-auto'}`}
+        style={stickyHeader ? { maxHeight } : undefined}
+      >
+        <div className="relative">
+          <Table>
+            <TableHeader className={stickyHeader ? 'sticky top-0 z-10 bg-gray-50 shadow-sm' : ''}>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableHead 
+                    key={column.key}
+                    className={`${column.minWidth ? `min-w-[${column.minWidth}]` : ''} ${stickyHeader ? 'bg-gray-50' : ''}`}
+                  >
+                    {column.label}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {data.map((record, index) => (
               <TableRow key={keyExtractor(record, index)}>
@@ -141,10 +227,11 @@ export default function DynamicTable<T = any>({
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden space-y-3 sm:space-y-4 px-1">
+      <div className="md:hidden space-y-3 px-1">
         {data.map((record, index) => (
           <div key={keyExtractor(record, index)}>
             {renderMobileCard(record, index)}
@@ -154,9 +241,9 @@ export default function DynamicTable<T = any>({
 
       {/* Pagination Controls */}
       {pagination && pagination.pages > 0 && (
-        <div className="mt-6 space-y-4">
+        <div className="mt-4">
           {/* Mobile: Simplified pagination */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden bg-white rounded-lg px-4 py-3 space-y-3">
             {/* Records per page - Mobile */}
             {onRecordsPerPageChange && recordsPerPage && (
               <div className="flex items-center space-x-2">
@@ -210,45 +297,39 @@ export default function DynamicTable<T = any>({
           </div>
 
           {/* Desktop: Full pagination */}
-          <div className="hidden md:flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} records
+          <div className="hidden md:flex items-center justify-between bg-white rounded-lg px-4 py-3 overflow-visible flex-nowrap">
+            <div className="text-sm text-gray-600 font-medium whitespace-nowrap flex-shrink-0">
+              Total Records: {pagination.total}
             </div>
             
-            <div className="flex items-center space-x-2">
-              {onRecordsPerPageChange && recordsPerPage && (
-                <div className="flex items-center space-x-2 mr-4">
-                  <Label htmlFor="recordsPerPageDesktop" className="text-sm text-gray-700 whitespace-nowrap">
-                    Records per page:
-                  </Label>
-                  <Select
-                    id="recordsPerPageDesktop"
-                    value={recordsPerPage}
-                    onChange={(e) => onRecordsPerPageChange(e.target.value)}
-                    className="w-32"
-                  >
-                    <option value="5">5 records</option>
-                    <option value="10">10 records</option>
-                    <option value="20">20 records</option>
-                    <option value="50">50 records</option>
-                  </Select>
-                </div>
-              )}
-              
+            <div className="flex items-center gap-2 relative flex-nowrap flex-shrink-0">
               {onPageChange && pagination.pages > 1 && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
                     onClick={() => onPageChange(pagination.page - 1)}
                     disabled={!pagination.hasPrev}
-                    className="flex items-center space-x-1"
+                    className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </Button>
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
                   
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center gap-1 flex-nowrap">
+                    {/* First page */}
+                    {pagination.page > 3 && pagination.pages > 5 && (
+                      <>
+                        <button
+                          onClick={() => onPageChange(1)}
+                          className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
+                        >
+                          1
+                        </button>
+                        {pagination.page > 4 && (
+                          <span className="px-1 text-gray-400 whitespace-nowrap flex-shrink-0">...</span>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Page numbers around current page */}
                     {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
                       let pageNum;
                       if (pagination.pages <= 5) {
@@ -262,30 +343,53 @@ export default function DynamicTable<T = any>({
                       }
                       
                       return (
-                        <Button
+                        <button
                           key={pageNum}
-                          variant={pagination.page === pageNum ? "default" : "outline"}
-                          size="sm"
                           onClick={() => onPageChange(pageNum)}
-                          className="w-8 h-8 p-0"
+                          className={`px-3 py-1 text-sm rounded transition-colors whitespace-nowrap flex-shrink-0 ${
+                            pagination.page === pageNum
+                              ? 'bg-blue-100 text-blue-600 border border-blue-300 font-medium'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
                         >
                           {pageNum}
-                        </Button>
+                        </button>
                       );
                     })}
+                    
+                    {/* Last page */}
+                    {pagination.page < pagination.pages - 2 && pagination.pages > 5 && (
+                      <>
+                        {pagination.page < pagination.pages - 3 && (
+                          <span className="px-1 text-gray-400 whitespace-nowrap flex-shrink-0">...</span>
+                        )}
+                        <button
+                          onClick={() => onPageChange(pagination.pages)}
+                          className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
+                        >
+                          {pagination.pages}
+                        </button>
+                      </>
+                    )}
                   </div>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
                     onClick={() => onPageChange(pagination.page + 1)}
                     disabled={!pagination.hasNext}
-                    className="flex items-center space-x-1"
+                    className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                   >
-                    <span>Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
                 </>
+              )}
+              
+              {onRecordsPerPageChange && recordsPerPage && (
+                <div className="flex-shrink-0">
+                  <RecordsPerPageDropdown
+                    value={recordsPerPage}
+                    onChange={onRecordsPerPageChange}
+                  />
+                </div>
               )}
             </div>
           </div>

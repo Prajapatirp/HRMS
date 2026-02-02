@@ -547,8 +547,8 @@ export default function AdminAttendancePage() {
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin - Attendance Management</h1>
-          <p className="text-gray-600">View and manage all employees&apos; attendance records</p>
+          <h1 className="text-3xl font-bold text-gray-900">Attendance Management</h1>
+          {/* <p className="text-gray-600">View and manage all employees&apos; attendance records</p> */}
         </div>
 
         {/* Personal Attendance Section */}
@@ -820,12 +820,6 @@ export default function AdminAttendancePage() {
         <Card>
           <CardHeader>
             <CardTitle>Attendance History</CardTitle>
-            <CardDescription>
-              Showing {attendance.length} of {pagination.total} records
-              {pagination.total > 0 && (
-                <span> (Page {pagination.page} of {pagination.pages})</span>
-              )}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <DynamicTable
@@ -843,6 +837,8 @@ export default function AdminAttendancePage() {
               }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderAttendanceMobileCard}
+              stickyHeader={true}
+              maxHeight="calc(100vh - 400px)"
             />
           </CardContent>
         </Card>
