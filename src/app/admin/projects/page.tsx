@@ -705,6 +705,8 @@ export default function AdminProjectsPage() {
               }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderProjectMobileCard}
+              stickyHeader={true}
+              maxHeight="calc(100vh - 400px)"
             />
           </CardContent>
         </Card>

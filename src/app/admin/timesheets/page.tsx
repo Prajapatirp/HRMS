@@ -766,6 +766,8 @@ export default function AdminTimesheetsPage() {
             }}
             keyExtractor={(record) => record._id}
             mobileCardRender={renderTimesheetMobileCard}
+            stickyHeader={true}
+            maxHeight="calc(100vh - 400px)"
           />
         </CardContent>
       </Card>

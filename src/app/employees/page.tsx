@@ -657,6 +657,8 @@ export default function EmployeesPage() {
               }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderEmployeeMobileCard}
+              stickyHeader={true}
+              maxHeight="calc(100vh - 400px)"
             />
             </CardContent>
           </Card>

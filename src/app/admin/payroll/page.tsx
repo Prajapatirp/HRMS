@@ -711,6 +711,8 @@ export default function AdminPayrollPage() {
               }}
               keyExtractor={(record) => record._id}
               mobileCardRender={renderPayrollMobileCard}
+              stickyHeader={true}
+              maxHeight="calc(100vh - 400px)"
             />
           </CardContent>
         </Card>
