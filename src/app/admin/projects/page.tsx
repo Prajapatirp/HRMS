@@ -302,30 +302,16 @@ export default function AdminProjectsPage() {
       mobileLabel: 'Status',
     },
     {
-      key: 'startDate',
-      label: 'Start Date',
-      minWidth: '120px',
-      render: (value) => (
-        value ? new Date(value).toLocaleDateString() : '-'
-      ),
-      mobileLabel: 'Start Date',
-    },
-    {
-      key: 'endDate',
-      label: 'End Date',
-      minWidth: '120px',
-      render: (value) => (
-        value ? new Date(value).toLocaleDateString() : '-'
-      ),
-      mobileLabel: 'End Date',
-    },
-    {
       key: 'createdAt',
       label: 'Created',
       minWidth: '120px',
-      render: (value) => (
-        new Date(value).toLocaleDateString()
-      ),
+      render: (value) => {
+        const date = new Date(value);
+        const day = date.getDate();
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+      },
       mobileLabel: 'Created',
       hideOnMobile: true,
     },
@@ -419,18 +405,6 @@ export default function AdminProjectsPage() {
             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
               {project.status}
             </span>
-          </div>
-        </div>
-        <div className="mb-3 pb-3 border-b">
-          <p className="text-xs text-gray-500 mb-1">Start Date</p>
-          <div className="text-sm text-gray-900">
-            {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}
-          </div>
-        </div>
-        <div className="mb-3 pb-3 border-b">
-          <p className="text-xs text-gray-500 mb-1">End Date</p>
-          <div className="text-sm text-gray-900">
-            {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}
           </div>
         </div>
         <div className="pt-2">

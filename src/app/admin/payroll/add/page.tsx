@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -71,7 +71,7 @@ const validationSchema = Yup.object({
     }),
 });
 
-export default function AddPayrollPage() {
+function AddPayrollPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token } = useAuth();
@@ -183,7 +183,7 @@ export default function AddPayrollPage() {
     }
   }, [token]);
 
-  const fetchPayrollData = useCallback(async (setValuesFn: typeof formik.setValues) => {
+  const fetchPayrollData = useCallback(async () => {
     if (!payrollId || !token) return;
 
     try {
@@ -201,7 +201,7 @@ export default function AddPayrollPage() {
           : null;
         
         if (payroll) {
-          setValuesFn({
+          formik.setValues({
             employeeId: payroll.employeeId || '',
             month: payroll.month?.toString() || '',
             year: payroll.year || new Date().getFullYear(),
@@ -226,7 +226,7 @@ export default function AddPayrollPage() {
     } finally {
       setLoading(false);
     }
-  }, [payrollId, token]);
+  }, [payrollId, token, formik]);
 
   useEffect(() => {
     if (token && !employeesFetchedRef.current) {
@@ -236,9 +236,9 @@ export default function AddPayrollPage() {
 
   useEffect(() => {
     if (token && isEditMode && payrollId) {
-      fetchPayrollData(formik.setValues);
+      fetchPayrollData();
     }
-  }, [token, isEditMode, payrollId, fetchPayrollData]);
+  }, [token, isEditMode, payrollId, fetchPayrollData, formik.setValues]);
 
   const selectedEmployeeData = employees.find(emp => emp.employeeId === formik.values.employeeId);
 
@@ -681,5 +681,19 @@ export default function AddPayrollPage() {
         </form>
       </div>
     </Layout>
+  );
+}
+
+export default function AddPayrollPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    }>
+      <AddPayrollPageContent />
+    </Suspense>
   );
 }

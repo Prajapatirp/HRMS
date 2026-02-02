@@ -86,7 +86,6 @@ async function updatePayroll(req: NextRequest, { params }: { params: { id: strin
     payroll.netSalary = netSalary;
     
     // Set paidAt when status changes to 'paid'
-    const previousStatus = payroll.status;
     payroll.status = payrollData.status || payroll.status;
     if (payroll.status === 'paid') {
       if (payrollData.paidDate) {
@@ -131,7 +130,7 @@ async function patchPayrollStatus(req: NextRequest, { params }: { params: { id: 
     }
 
     // Find the payroll record
-    const payroll = await Payroll.findById(params.id);
+    const payroll = await Payroll.findById(params?.id);
     
     if (!payroll) {
       return NextResponse.json(

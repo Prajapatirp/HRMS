@@ -42,6 +42,7 @@ interface PayrollRecord {
 export default function PayrollPage() {
   const router = useRouter();
   const { user, token } = useAuth();
+
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -91,10 +92,15 @@ export default function PayrollPage() {
   }, [filters, token]);
 
   useEffect(() => {
-    if (token) {
+    // Redirect admin/HR users to admin payroll page
+    if (user && (user.role === 'admin' || user.role === 'hr')) {
+      router.push('/admin/payroll');
+      return;
+    }
+    if (token && user && user.role !== 'admin' && user.role !== 'hr') {
       fetchPayroll(1);
     }
-  }, [token, fetchPayroll]);
+  }, [token, user, router, fetchPayroll]);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev: any) => ({
@@ -296,6 +302,17 @@ export default function PayrollPage() {
 
   if (!user) {
     return <div>Please log in to view this page.</div>;
+  }
+
+  // Show loading while redirecting admin/HR users
+  if (user.role === 'admin' || user.role === 'hr') {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    );
   }
 
   return (

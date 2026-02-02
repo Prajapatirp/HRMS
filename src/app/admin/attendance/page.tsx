@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { CheckCircle, XCircle, Search, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';

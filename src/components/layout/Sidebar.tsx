@@ -17,8 +17,6 @@ import {
   Settings,
   LogOut,
   Clock,
-  ChevronDown,
-  ChevronRight,
   X,
 } from 'lucide-react';
 
@@ -30,7 +28,7 @@ const getNavigation = (userRole: string) => {
         { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
         { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
         { name: 'Projects', href: '/admin/projects', icon: FileText },
-        { name: 'Payroll', href: '/payroll', icon: DollarSign },
+        { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
         { name: 'Performance', href: '/performance', icon: TrendingUp },
         { name: 'Notifications', href: '/notifications', icon: Bell },
         { name: 'Settings', href: '/settings', icon: Settings },
@@ -66,15 +64,6 @@ const getNavigation = (userRole: string) => {
   return baseNavigation;
 };
 
-const getAdminNavigation = () => {
-  return [
-    // { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
-    // { name: 'Projects', href: '/admin/projects', icon: FileText },
-    // { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
-    { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
-  ];
-};
-
 interface SidebarProps {
   isOpen: boolean;
   isCollapsed: boolean;
@@ -84,9 +73,6 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, isCollapsed, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, logoutLoading } = useAuth();
-  const [isEmployeeDetailsOpen, setIsEmployeeDetailsOpen] = React.useState(
-    pathname.startsWith('/admin')
-  );
 
   return (
     <>
@@ -176,89 +162,6 @@ export default function Sidebar({ isOpen, isCollapsed, onClose }: SidebarProps) 
             );
           })}
           
-          {/* Employee Details Section for Admin */}
-          {user?.role === 'admin' && !isCollapsed && (
-            <div className="pt-4 border-t border-gray-200">
-              <button
-                onClick={() => setIsEmployeeDetailsOpen(!isEmployeeDetailsOpen)}
-                className={cn(
-                  'flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out',
-                  'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50',
-                  isEmployeeDetailsOpen && 'bg-gray-50 text-gray-900'
-                )}
-              >
-                <Users className="mr-3 h-4 w-4 flex-shrink-0" />
-                <span className="flex-1 text-left">Employee Details</span>
-                <div className="ml-auto transition-transform duration-200 ease-in-out">
-                  {isEmployeeDetailsOpen ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </div>
-              </button>
-              
-              <div className={cn(
-                'overflow-hidden transition-all duration-300 ease-in-out',
-                isEmployeeDetailsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-              )}>
-                <div className="ml-6 mt-2 space-y-1 pb-2">
-                  {getAdminNavigation().map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={onClose}
-                        className={cn(
-                          'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out',
-                          'hover:bg-gray-100 hover:text-gray-900 min-w-0',
-                          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50',
-                          isActive
-                            ? 'bg-blue-100 text-blue-700 border-l-2 border-blue-500'
-                            : 'text-gray-600'
-                        )}
-                      >
-                        <item.icon className="mr-3 h-4 w-4 flex-shrink-0" />
-                        <span className="flex-1 truncate">{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Collapsed Admin Navigation */}
-          {user?.role === 'admin' && isCollapsed && (
-            <div className="pt-4 border-t border-gray-200 space-y-2">
-              {getAdminNavigation().map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={onClose}
-                    className={cn(
-                      'flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
-                      'group relative',
-                      isActive
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    )}
-                    title={item.name}
-                  >
-                    <item.icon className="h-4 w-4 flex-shrink-0" />
-                    {/* Tooltip for collapsed state */}
-                    <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                      {item.name}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
         </nav>
       </div>
       

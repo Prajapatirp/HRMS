@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { DollarSign, Download, Eye, Plus, Search, Filter, Edit, CheckCircle2, X } from 'lucide-react';
+import { DollarSign, Download, Eye, Plus, Filter, Edit, CheckCircle2, X } from 'lucide-react';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PayrollDetailsModal from '@/components/payroll/PayrollDetailsModal';
@@ -487,7 +487,7 @@ export default function AdminPayrollPage() {
     return <div>Please log in to view this page.</div>;
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'hr') {
     return (
       <Layout>
         <div className="text-center py-8">
