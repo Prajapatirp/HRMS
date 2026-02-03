@@ -17,12 +17,23 @@ interface Employee {
   };
 }
 
+interface AttendanceRecord {
+  _id: string;
+  employeeId: string;
+  date: string;
+  checkIn?: string;
+  checkOut?: string;
+  status: string;
+  notes?: string;
+}
+
 interface ManualAttendanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   employees: Employee[];
   token: string | null;
+  attendanceRecord?: AttendanceRecord | null;
 }
 
 // Custom Employee Dropdown Component
@@ -141,8 +152,10 @@ export default function ManualAttendanceModal({
   onClose, 
   onSuccess,
   employees,
-  token 
+  token,
+  attendanceRecord = null
 }: ManualAttendanceModalProps) {
+  const isEditMode = !!attendanceRecord;
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [date, setDate] = useState('');
   const [checkIn, setCheckIn] = useState('');
@@ -154,18 +167,46 @@ export default function ManualAttendanceModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Set default date to today
-      const today = new Date().toISOString().split('T')[0];
-      setDate(today);
-      // Reset form
-      setSelectedEmployee('');
-      setCheckIn('');
-      setCheckOut('');
-      setStatus('present');
-      setNotes('');
+      if (isEditMode && attendanceRecord) {
+        // Populate form with existing attendance data
+        setSelectedEmployee(attendanceRecord.employeeId);
+        const recordDate = new Date(attendanceRecord.date);
+        setDate(recordDate.toISOString().split('T')[0]);
+        
+        if (attendanceRecord.checkIn) {
+          const checkInDate = new Date(attendanceRecord.checkIn);
+          const hours = String(checkInDate.getHours()).padStart(2, '0');
+          const minutes = String(checkInDate.getMinutes()).padStart(2, '0');
+          setCheckIn(`${hours}:${minutes}`);
+        } else {
+          setCheckIn('');
+        }
+        
+        if (attendanceRecord.checkOut) {
+          const checkOutDate = new Date(attendanceRecord.checkOut);
+          const hours = String(checkOutDate.getHours()).padStart(2, '0');
+          const minutes = String(checkOutDate.getMinutes()).padStart(2, '0');
+          setCheckOut(`${hours}:${minutes}`);
+        } else {
+          setCheckOut('');
+        }
+        
+        setStatus(attendanceRecord.status || 'present');
+        setNotes(attendanceRecord.notes || '');
+      } else {
+        // Set default date to today for new records
+        const today = new Date().toISOString().split('T')[0];
+        setDate(today);
+        // Reset form
+        setSelectedEmployee('');
+        setCheckIn('');
+        setCheckOut('');
+        setStatus('present');
+        setNotes('');
+      }
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, isEditMode, attendanceRecord]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,37 +232,67 @@ export default function ManualAttendanceModal({
     }
 
     try {
-      // Combine date with time for check-in and check-out
-      const checkInDateTime = checkIn ? `${date}T${checkIn}:00` : undefined;
-      const checkOutDateTime = checkOut ? `${date}T${checkOut}:00` : undefined;
+      if (isEditMode && attendanceRecord) {
+        // Update existing attendance
+        const checkInDateTime = checkIn ? `${date}T${checkIn}:00` : null;
+        const checkOutDateTime = checkOut ? `${date}T${checkOut}:00` : null;
 
-      const response = await fetch('/api/attendance/admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          employeeId: selectedEmployee,
-          date: date,
-          checkIn: checkInDateTime,
-          checkOut: checkOutDateTime,
-          status: status,
-          notes: notes || undefined,
-        }),
-      });
+        const response = await fetch('/api/attendance/admin', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            attendanceId: attendanceRecord._id,
+            checkIn: checkInDateTime,
+            checkOut: checkOutDateTime,
+            status: status,
+            notes: notes || undefined,
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (response.ok) {
-        onSuccess();
-        onClose();
+        if (response.ok) {
+          onSuccess();
+          onClose();
+        } else {
+          setError(data.error || 'Failed to update attendance');
+        }
       } else {
-        setError(data.error || 'Failed to add attendance');
+        // Create new attendance
+        const checkInDateTime = checkIn ? `${date}T${checkIn}:00` : undefined;
+        const checkOutDateTime = checkOut ? `${date}T${checkOut}:00` : undefined;
+
+        const response = await fetch('/api/attendance/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            employeeId: selectedEmployee,
+            date: date,
+            checkIn: checkInDateTime,
+            checkOut: checkOutDateTime,
+            status: status,
+            notes: notes || undefined,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          onSuccess();
+          onClose();
+        } else {
+          setError(data.error || 'Failed to add attendance');
+        }
       }
     } catch (error) {
-      console.error('Error adding attendance:', error);
-      setError('An error occurred while adding attendance');
+      console.error(`Error ${isEditMode ? 'updating' : 'adding'} attendance:`, error);
+      setError(`An error occurred while ${isEditMode ? 'updating' : 'adding'} attendance`);
     } finally {
       setLoading(false);
     }
@@ -231,7 +302,7 @@ export default function ManualAttendanceModal({
     <DynamicModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Manual Attendance"
+      title={isEditMode ? "Edit Attendance" : "Add Manual Attendance"}
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -246,26 +317,47 @@ export default function ManualAttendanceModal({
             <Label htmlFor="employee" className="text-gray-700 mb-2 block">
               Employee <span className="text-red-500">*</span>
             </Label>
-            <EmployeeDropdown
-              value={selectedEmployee}
-              onChange={setSelectedEmployee}
-              employees={employees}
-              placeholder="Select Employee"
-            />
+            {isEditMode ? (
+              <Input
+                type="text"
+                value={employees.find(emp => emp.employeeId === selectedEmployee) 
+                  ? `${employees.find(emp => emp.employeeId === selectedEmployee)?.personalInfo.firstName} ${employees.find(emp => emp.employeeId === selectedEmployee)?.personalInfo.lastName}`
+                  : selectedEmployee}
+                disabled
+                className="w-full bg-gray-50"
+              />
+            ) : (
+              <EmployeeDropdown
+                value={selectedEmployee}
+                onChange={setSelectedEmployee}
+                employees={employees}
+                placeholder="Select Employee"
+              />
+            )}
           </div>
 
           <div>
             <Label htmlFor="date" className="text-gray-700 mb-2 block">
               Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full"
-              required
-            />
+            {isEditMode ? (
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                disabled
+                className="w-full bg-gray-50"
+              />
+            ) : (
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full"
+                required
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -347,12 +439,12 @@ export default function ManualAttendanceModal({
             {loading ? (
               <>
                 <Clock className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
+                {isEditMode ? 'Updating...' : 'Adding...'}
               </>
             ) : (
               <>
                 <Clock className="h-4 w-4 mr-2" />
-                Add Attendance
+                {isEditMode ? 'Update Attendance' : 'Add Attendance'}
               </>
             )}
           </Button>

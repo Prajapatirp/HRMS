@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp, Plus, Edit } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
@@ -190,6 +190,7 @@ export default function AdminAttendancePage() {
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarEmployeeId, setCalendarEmployeeId] = useState<string>('');
   const [manualAttendanceModalOpen, setManualAttendanceModalOpen] = useState(false);
+  const [editingAttendance, setEditingAttendance] = useState<AttendanceRecord | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -562,6 +563,48 @@ export default function AdminAttendancePage() {
       mobileLabel: 'Notes',
       hideOnMobile: false,
     },
+    {
+      key: 'actions',
+      label: 'Actions',
+      minWidth: '100px',
+      render: (_, record) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => {
+              setEditingAttendance(record);
+              setManualAttendanceModalOpen(true);
+            }}
+            className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+            title="Edit Attendance"
+          >
+            <Edit className="h-4 w-4 text-gray-700" />
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                Edit Attendance
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </button>
+        </div>
+      ),
+      mobileLabel: 'Actions',
+      mobileRender: (_, record) => (
+        <div className="flex items-center space-x-2 pt-2">
+          <button
+            onClick={() => {
+              setEditingAttendance(record);
+              setManualAttendanceModalOpen(true);
+            }}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            <Edit className="h-3 w-3" />
+            <span>Edit</span>
+          </button>
+        </div>
+      ),
+    },
   ];
 
   // Custom mobile card render for admin attendance
@@ -631,6 +674,19 @@ export default function AdminAttendancePage() {
             <p className="text-sm text-gray-700">{record.notes}</p>
           </div>
         )}
+        
+        <div className="mt-3 pt-3 border-t flex justify-end">
+          <button
+            onClick={() => {
+              setEditingAttendance(record);
+              setManualAttendanceModalOpen(true);
+            }}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            <Edit className="h-3 w-3" />
+            <span>Edit</span>
+          </button>
+        </div>
       </div>
     );
   };
@@ -801,7 +857,10 @@ export default function AdminAttendancePage() {
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3">
           <button
-            onClick={() => setManualAttendanceModalOpen(true)}
+            onClick={() => {
+              setEditingAttendance(null);
+              setManualAttendanceModalOpen(true);
+            }}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
@@ -973,16 +1032,21 @@ export default function AdminAttendancePage() {
         {/* Manual Attendance Modal */}
         <ManualAttendanceModal
           isOpen={manualAttendanceModalOpen}
-          onClose={() => setManualAttendanceModalOpen(false)}
+          onClose={() => {
+            setManualAttendanceModalOpen(false);
+            setEditingAttendance(null);
+          }}
           onSuccess={() => {
             fetchAttendance(pagination.page);
             if (calendarOpen && token) {
               const currentDate = new Date();
               fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
             }
+            setEditingAttendance(null);
           }}
           employees={employees}
           token={token}
+          attendanceRecord={editingAttendance}
         />
       </div>
     </Layout>
