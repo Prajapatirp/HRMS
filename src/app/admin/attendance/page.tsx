@@ -552,18 +552,6 @@ export default function AdminAttendancePage() {
       ) : <span className="text-sm text-gray-400">-</span>,
     },
     {
-      key: 'notes',
-      label: 'Notes',
-      minWidth: '200px',
-      render: (value) => value ? (
-        <span className="text-sm text-gray-600 truncate max-w-[200px] block" title={value}>
-          {value}
-        </span>
-      ) : <span className="text-gray-400">-</span>,
-      mobileLabel: 'Notes',
-      hideOnMobile: false,
-    },
-    {
       key: 'actions',
       label: 'Actions',
       minWidth: '100px',
