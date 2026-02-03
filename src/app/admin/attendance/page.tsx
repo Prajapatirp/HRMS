@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 import FilterDrawer from '@/components/ui/filter-drawer';
+import ManualAttendanceModal from '@/components/attendance/ManualAttendanceModal';
 
 interface AttendanceRecord {
   _id: string;
@@ -45,6 +46,136 @@ interface Employee {
   };
 }
 
+// Custom Employee Dropdown Component
+function EmployeeDropdown({
+  value,
+  onChange,
+  employees,
+  placeholder = 'All employees',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  employees: Employee[];
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Calculate if dropdown should open upward or downward
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        // Open upward if there's more space above or if space below is less than 240px
+        setOpenUpward(spaceAbove > spaceBelow || spaceBelow < 240);
+      }
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Scroll selected item into view when dropdown opens
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      const selectedButton = menuRef.current.querySelector(
+        value ? `[data-employee-id="${value}"]` : '[data-employee-id="all"]'
+      ) as HTMLElement;
+      if (selectedButton) {
+        selectedButton.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [isOpen, value]);
+
+  const selectedEmployee = employees.find(emp => emp.employeeId === value);
+  const displayText = selectedEmployee 
+    ? `${selectedEmployee.personalInfo.firstName} ${selectedEmployee.personalInfo.lastName}`
+    : placeholder;
+
+  return (
+    <div className="relative z-50 w-full" ref={dropdownRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-blue-50 border border-blue-300 text-blue-600 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer flex items-center justify-between hover:bg-blue-100 transition-colors"
+      >
+        <span className="truncate">{displayText}</span>
+        <ChevronDown className={`h-4 w-4 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+            style={{ pointerEvents: 'auto' }}
+          />
+          <div 
+            ref={menuRef}
+            className={`absolute left-0 w-full bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden max-h-60 overflow-y-auto ${
+              openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
+            }`}
+            style={{ zIndex: 9999 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="py-1">
+              <button
+                data-employee-id="all"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange('');
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  value === ''
+                    ? 'bg-blue-50 text-blue-600 border-l-2 border-blue-500 font-medium'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {placeholder}
+              </button>
+              {employees.map((emp) => (
+                <button
+                  key={emp.employeeId}
+                  data-employee-id={emp.employeeId}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange(emp.employeeId);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    value === emp.employeeId
+                      ? 'bg-blue-50 text-blue-600 border-l-2 border-blue-500 font-medium'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function AdminAttendancePage() {
   const { user, token } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -58,6 +189,7 @@ export default function AdminAttendancePage() {
   const [calendarAttendance, setCalendarAttendance] = useState<AttendanceRecord[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarEmployeeId, setCalendarEmployeeId] = useState<string>('');
+  const [manualAttendanceModalOpen, setManualAttendanceModalOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -666,8 +798,15 @@ export default function AdminAttendancePage() {
           </Card>
         )}
 
-        {/* Filter Button */}
-        <div className="flex items-center justify-end">
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={() => setManualAttendanceModalOpen(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Manual Attendance</span>
+          </button>
           <button
             onClick={() => setFilterDrawerOpen(true)}
             className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -694,19 +833,12 @@ export default function AdminAttendancePage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="employee" className="text-gray-700 mb-1">Employee</Label>
-              <Select
-                id="employee"
+              <EmployeeDropdown
                 value={filters.employeeId}
-                onChange={(e) => handleFilterChange('employeeId', e.target.value)}
-                className="w-full"
-              >
-                <option value="">All employees</option>
-                {employees.map((emp) => (
-                  <option key={emp.employeeId} value={emp.employeeId}>
-                    {emp.personalInfo.firstName} {emp.personalInfo.lastName}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => handleFilterChange('employeeId', value)}
+                employees={employees}
+                placeholder="All employees"
+              />
             </div>
 
             <div>
@@ -784,23 +916,18 @@ export default function AdminAttendancePage() {
                 <Label htmlFor="calendarEmployee" className="text-sm font-medium text-gray-700 mb-2 block">
                   Select Employee
                 </Label>
-                <Select
-                  id="calendarEmployee"
-                  value={calendarEmployeeId}
-                  onChange={(e) => {
-                    setCalendarEmployeeId(e.target.value);
-                    // Reset calendar attendance when employee changes
-                    setCalendarAttendance([]);
-                  }}
-                  className="w-full max-w-xs"
-                >
-                  <option value="">All employees</option>
-                  {employees.map((emp) => (
-                    <option key={emp.employeeId} value={emp.employeeId}>
-                      {emp.personalInfo.firstName} {emp.personalInfo.lastName}
-                    </option>
-                  ))}
-                </Select>
+                <div className="max-w-xs">
+                  <EmployeeDropdown
+                    value={calendarEmployeeId}
+                    onChange={(value) => {
+                      setCalendarEmployeeId(value);
+                      // Reset calendar attendance when employee changes
+                      setCalendarAttendance([]);
+                    }}
+                    employees={employees}
+                    placeholder="All employees"
+                  />
+                </div>
               </div>
               <AttendanceCalendar
                 attendance={calendarAttendance.map(record => ({
@@ -842,6 +969,21 @@ export default function AdminAttendancePage() {
             />
           </CardContent>
         </Card>
+
+        {/* Manual Attendance Modal */}
+        <ManualAttendanceModal
+          isOpen={manualAttendanceModalOpen}
+          onClose={() => setManualAttendanceModalOpen(false)}
+          onSuccess={() => {
+            fetchAttendance(pagination.page);
+            if (calendarOpen && token) {
+              const currentDate = new Date();
+              fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
+            }
+          }}
+          employees={employees}
+          token={token}
+        />
       </div>
     </Layout>
   );
