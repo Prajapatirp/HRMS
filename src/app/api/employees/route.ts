@@ -21,16 +21,24 @@ async function getEmployees(req: NextRequest) {
 
     const query: any = {};
     
+    // Handle status filter: if empty string, show all; if not provided, default to active
+    if (status !== null && status !== undefined) {
+      if (status === '') {
+        // Empty string means show all statuses - don't add status filter
+      } else {
+        query.status = status;
+      }
+    } else {
+      // No status param provided - default to active
+      query.status = 'active';
+    }
+    
     if (department) {
       query['jobInfo.department'] = department;
     }
     
     if (designation) {
       query['jobInfo.designation'] = { $regex: designation, $options: 'i' };
-    }
-    
-    if (status) {
-      query.status = status;
     }
     
     if (employeeName) {

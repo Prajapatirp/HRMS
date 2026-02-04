@@ -54,6 +54,7 @@ export default function EmployeesPage() {
     employeeName: '',
     department: '',
     designation: '',
+    status: 'active', // Default to active employees
     startDate: '',
     endDate: '',
     limit: '10',
@@ -74,6 +75,16 @@ export default function EmployeesPage() {
       }
       if (currentFilters.designation) {
         queryParams.append('designation', currentFilters.designation);
+      }
+      // Send status param - "all" means show all statuses (don't send param)
+      if (currentFilters.status && currentFilters.status !== 'all') {
+        queryParams.append('status', currentFilters.status);
+      } else if (!currentFilters.status || currentFilters.status === 'all') {
+        // For "all" or default, don't send status param - API will default to active
+        // But if explicitly "all", we want to show all, so send empty
+        if (currentFilters.status === 'all') {
+          queryParams.append('status', '');
+        }
       }
       if (currentFilters.startDate) {
         queryParams.append('startDate', currentFilters.startDate);
@@ -166,6 +177,7 @@ export default function EmployeesPage() {
     if (filters.employeeName) count++;
     if (filters.department) count++;
     if (filters.designation) count++;
+    if (filters.status && filters.status !== 'active' && filters.status !== 'all') count++; // Don't count default 'active' or 'all'
     if (filters.startDate) count++;
     if (filters.endDate) count++;
     return count;
@@ -176,6 +188,7 @@ export default function EmployeesPage() {
       employeeName: '',
       department: '',
       designation: '',
+      status: 'active', // Reset to default active
       startDate: '',
       endDate: '',
       limit: '10',
@@ -199,6 +212,32 @@ export default function EmployeesPage() {
     router.push(`/employees/add?id=${employee.employeeId}`);
   };
 
+  const handleStatusUpdate = async (employee: Employee, newStatus: string) => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`/api/employees/${employee.employeeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Refresh the employee list
+        fetchEmployees(pagination.page, filters, user?.employeeId);
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update employee status');
+      }
+    } catch (error) {
+      console.error('Failed to update employee status:', error);
+      alert('Failed to update employee status. Please try again.');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     return status === 'active' 
       ? 'bg-green-100 text-green-800' 
@@ -207,15 +246,6 @@ export default function EmployeesPage() {
 
   // Define columns for employee table
   const employeeColumns: Column<Employee>[] = [
-    {
-      key: 'employeeId',
-      label: 'Employee ID',
-      minWidth: '120px',
-      render: (value) => (
-        <span className="font-medium text-blue-600">{value}</span>
-      ),
-      mobileLabel: 'Employee ID',
-    },
     {
       key: 'personalInfo',
       label: 'Name',
@@ -355,7 +385,7 @@ export default function EmployeesPage() {
     {
       key: 'actions',
       label: 'Actions',
-      minWidth: '150px',
+      minWidth: '200px',
       render: (_, record) => (
         <div className="flex items-center space-x-2">
           <button
@@ -388,6 +418,35 @@ export default function EmployeesPage() {
               </div>
             </div>
           </button>
+          <div className="relative group flex items-center">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={record.status === 'active'}
+                onChange={(e) => {
+                  const newStatus = e.target.checked ? 'active' : 'inactive';
+                  handleStatusUpdate(record, newStatus);
+                }}
+                disabled={record.status === 'terminated'}
+                className="sr-only peer"
+                title={record.status === 'terminated' ? 'Cannot change terminated status' : record.status === 'active' ? 'Click to deactivate employee' : 'Click to activate employee'}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
+            </label>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+              <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                {record.status === 'terminated' 
+                  ? 'Cannot change terminated status' 
+                  : record.status === 'active' 
+                    ? 'Click to deactivate employee' 
+                    : 'Click to activate employee'}
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+                <div className="border-4 border-transparent border-t-black"></div>
+              </div>
+            </div>
+          </div>
         </div>
       ),
       mobileLabel: 'Actions',
@@ -444,7 +503,6 @@ export default function EmployeesPage() {
               <p className="font-semibold text-gray-900 truncate">
                 {record.personalInfo.firstName} {record.personalInfo.lastName}
               </p>
-              <p className="text-xs text-gray-500">{record.employeeId}</p>
             </div>
           </div>
           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
@@ -475,25 +533,59 @@ export default function EmployeesPage() {
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 pt-3 border-t mt-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleViewDetails(record)}
-            className="flex-1 flex items-center justify-center space-x-1"
-          >
-            <Eye className="h-4 w-4" />
-            <span>View</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleEditEmployee(record)}
-            className="flex-1 flex items-center justify-center space-x-1"
-          >
-            <Edit className="h-4 w-4" />
-            <span>Edit</span>
-          </Button>
+        <div className="space-y-2 pt-3 border-t mt-3">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleViewDetails(record)}
+              className="flex-1 flex items-center justify-center space-x-1"
+            >
+              <Eye className="h-4 w-4" />
+              <span>View</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEditEmployee(record)}
+              className="flex-1 flex items-center justify-center space-x-1"
+            >
+              <Edit className="h-4 w-4" />
+              <span>Edit</span>
+            </Button>
+          </div>
+          <div className="w-full">
+            <Label className="text-xs text-gray-600 mb-2 block">Status</Label>
+            <div className="relative group flex items-center justify-end">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={record.status === 'active'}
+                  onChange={(e) => {
+                    const newStatus = e.target.checked ? 'active' : 'inactive';
+                    handleStatusUpdate(record, newStatus);
+                  }}
+                  disabled={record.status === 'terminated'}
+                  className="sr-only peer"
+                  title={record.status === 'terminated' ? 'Cannot change terminated status' : record.status === 'active' ? 'Click to deactivate employee' : 'Click to activate employee'}
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
+              </label>
+              {/* Tooltip */}
+              <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                <div className="px-2 py-1 text-xs text-white bg-black rounded">
+                  {record.status === 'terminated' 
+                    ? 'Cannot change terminated status' 
+                    : record.status === 'active' 
+                      ? 'Click to deactivate employee' 
+                      : 'Click to activate employee'}
+                </div>
+                <div className="absolute top-full right-4">
+                  <div className="border-4 border-transparent border-t-black"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -600,6 +692,21 @@ export default function EmployeesPage() {
                     {desig}
                   </option>
                 ))}
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="status" className="text-gray-700 mb-1">Status</Label>
+              <Select
+                id="status"
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="terminated">Terminated</option>
+                <option value="all">All Status</option>
               </Select>
             </div>
 
