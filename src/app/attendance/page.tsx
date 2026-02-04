@@ -4,14 +4,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Clock, CheckCircle, XCircle, Search, Filter, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Filter, Calendar as CalendarIcon } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
-import { formatDateTime, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
+import FilterDrawer from '@/components/ui/filter-drawer';
+import CheckInOutModal from '@/components/attendance/CheckInOutModal';
+import DynamicModal from '@/components/ui/dynamic-modal';
 
 interface AttendanceRecord {
   _id: string;
@@ -47,16 +49,65 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [checkInOutModalOpen, setCheckInOutModalOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarAttendance, setCalendarAttendance] = useState<AttendanceRecord[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
+  const [attendanceStats, setAttendanceStats] = useState({
+    present: 0,
+    'half-day': 0,
+    absent: 0,
+    late: 0,
+  });
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
     status: '',
     limit: '10'
   });
+
+  const fetchAttendanceStats = useCallback(async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      // Fetch all records for statistics (no pagination)
+      queryParams.append('limit', '1000'); // Large limit to get all records
+      
+      // If no date filters, default to current month
+      if (!filters.startDate && !filters.endDate) {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        queryParams.append('month', currentMonth.toString());
+        queryParams.append('year', currentYear.toString());
+      } else {
+        if (filters.startDate) queryParams.append('startDate', filters.startDate);
+        if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      }
+      
+      // Don't filter by status for statistics - we want all statuses
+      // if (filters.status) queryParams.append('status', filters.status);
+
+      const response = await fetch(`/api/attendance?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const allRecords = data.attendance || [];
+        setAttendanceStats({
+          present: allRecords.filter((r: AttendanceRecord) => r.status === 'present').length,
+          'half-day': allRecords.filter((r: AttendanceRecord) => r.status === 'half-day').length,
+          absent: allRecords.filter((r: AttendanceRecord) => r.status === 'absent').length,
+          late: allRecords.filter((r: AttendanceRecord) => r.status === 'late').length,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch attendance statistics:', error);
+    }
+  }, [filters.startDate, filters.endDate, token]);
 
   const fetchAttendance = useCallback(async (page = 1) => {
     try {
@@ -65,8 +116,18 @@ export default function AttendancePage() {
       queryParams.append('page', page.toString());
       queryParams.append('limit', filters.limit);
       
-      if (filters.startDate) queryParams.append('startDate', filters.startDate);
-      if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      // If no date filters, default to current month
+      if (!filters.startDate && !filters.endDate) {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        queryParams.append('month', currentMonth.toString());
+        queryParams.append('year', currentYear.toString());
+      } else {
+        if (filters.startDate) queryParams.append('startDate', filters.startDate);
+        if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      }
+      
       if (filters.status) queryParams.append('status', filters.status);
 
       const response = await fetch(`/api/attendance?${queryParams}`, {
@@ -93,8 +154,9 @@ export default function AttendancePage() {
   useEffect(() => {
     if (token) {
       fetchAttendance();
+      fetchAttendanceStats();
     }
-  }, [token, fetchAttendance]);
+  }, [token, fetchAttendance, fetchAttendanceStats]);
 
   const handleCheckIn = async () => {
     setCheckingIn(true);
@@ -159,7 +221,8 @@ export default function AttendancePage() {
 
   const todayAttendance = getTodayAttendance();
   const canCheckIn = !todayAttendance?.checkIn;
-  const canCheckOut = todayAttendance?.checkIn && !todayAttendance?.checkOut;
+  const canCheckOut = !!(todayAttendance?.checkIn && !todayAttendance?.checkOut);
+
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev: any) => ({
@@ -171,6 +234,8 @@ export default function AttendancePage() {
   const applyFilters = () => {
     setPagination((prev: any) => ({ ...prev, page: 1 }));
     fetchAttendance(1);
+    fetchAttendanceStats();
+    setFilterDrawerOpen(false);
   };
 
   const clearFilters = () => {
@@ -181,7 +246,15 @@ export default function AttendancePage() {
       limit: '10'
     });
     setPagination((prev: any) => ({ ...prev, page: 1 }));
-    fetchAttendance(1);
+    setTimeout(() => fetchAttendance(1), 100);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    if (filters.status) count++;
+    return count;
   };
 
   const handlePageChange = (newPage: number) => {
@@ -462,185 +535,156 @@ export default function AttendancePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-sm sm:text-base text-gray-600">Track your daily attendance and working hours</p>
+          {/* <p className="text-sm sm:text-base text-gray-600">Track your daily attendance and working hours</p> */}
         </div>
 
-        {/* Check In/Out Card */}
+        {/* Attendance Statistics */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Clock className="h-5 w-5" />
-              <span>Today's Attendance</span>
-            </CardTitle>
+            {/* <CardTitle>Attendance Statistics</CardTitle> */}
             <CardDescription>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              {filters.startDate || filters.endDate 
+                ? `Statistics for ${filters.startDate ? formatDate(filters.startDate) : 'start'} - ${filters.endDate ? formatDate(filters.endDate) : 'end'}`
+                : `Statistics for ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                {todayAttendance?.checkIn && (
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
-                      Checked in at {formatDateTime(todayAttendance.checkIn)}
-                    </span>
-                  </div>
-                )}
-                {todayAttendance?.checkOut && (
-                  <div className="flex items-center space-x-2">
-                    <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
-                      Checked out at {formatDateTime(todayAttendance.checkOut)}
-                    </span>
-                  </div>
-                )}
-                {todayAttendance?.totalHours && (
-                  <div className="text-xs sm:text-sm text-gray-600">
-                    Total hours: {todayAttendance.totalHours}h
-                    {todayAttendance.overtimeHours && todayAttendance.overtimeHours > 0 && (
-                      <span className="text-orange-600 ml-2">
-                        (Overtime: {todayAttendance.overtimeHours}h)
-                      </span>
-                    )}
-                  </div>
-                )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Present</p>
+                  <p className="text-2xl font-bold text-green-600 mt-1">{attendanceStats.present}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:space-y-0">
-                {canCheckIn && (
-                  <Button 
-                    onClick={handleCheckIn} 
-                    disabled={checkingIn}
-                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                  >
-                    {checkingIn ? 'Checking In...' : 'Check In'}
-                  </Button>
-                )}
-                {canCheckOut && (
-                  <Button 
-                    onClick={handleCheckOut} 
-                    disabled={checkingOut}
-                    variant="destructive"
-                    className="w-full sm:w-auto"
-                  >
-                    {checkingOut ? 'Checking Out...' : 'Check Out'}
-                  </Button>
-                )}
+
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Half Day</p>
+                  <p className="text-2xl font-bold text-blue-600 mt-1">{attendanceStats['half-day']}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Absent</p>
+                  <p className="text-2xl font-bold text-red-600 mt-1">{attendanceStats.absent}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Late</p>
+                  <p className="text-2xl font-bold text-yellow-600 mt-1">{attendanceStats.late}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
-            >
-              <CardTitle className="flex items-center space-x-2">
-                <Filter className="h-5 w-5" />
-                <span>Filter Attendance</span>
-              </CardTitle>
-              {filtersOpen ? (
-                <ChevronUp className="h-5 w-5 text-gray-500" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-gray-500" />
-              )}
-            </button>
-          </CardHeader>
-          {filtersOpen && (
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={() => {
+              setCheckInOutModalOpen(true);
+              // Refresh attendance data when modal opens
+              if (token) {
+                fetchAttendance(pagination.page);
+              }
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Clock className="h-4 w-4" />
+            <span>Check In/Out</span>
+          </button>
+          <button
+            onClick={() => {
+              setCalendarOpen(true);
+              if (token) {
+                const currentDate = new Date();
+                fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
+              }
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <CalendarIcon className="h-4 w-4" />
+            <span>Calendar</span>
+          </button>
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </button>
+        </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="endDate" className="text-sm font-medium text-gray-700">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
-                  <Select
-                    value={filters.status}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    className="w-full"
-                  >
-                    <option value="">All statuses</option>
-                    <option value="present">Present</option>
-                    <option value="absent">Absent</option>
-                    <option value="late">Late</option>
-                    <option value="half-day">Half Day</option>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:space-y-0">
-                <Button onClick={applyFilters} className="flex items-center justify-center space-x-2 w-full sm:w-auto">
-                  <Search className="h-4 w-4" />
-                  <span>Apply Filters</span>
-                </Button>
-                <Button onClick={clearFilters} variant="outline" className="w-full sm:w-auto">
-                  Clear Filters
-                </Button>
-              </div>
-            </CardContent>
-          )}
-        </Card>
-
-        {/* Calendar View */}
-        <Card>
-          <CardHeader>
-            <button
-              onClick={() => setCalendarOpen(!calendarOpen)}
-              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
-            >
-              <CardTitle className="flex items-center space-x-2">
-                <CalendarIcon className="h-5 w-5" />
-                <span>Calendar View</span>
-              </CardTitle>
-              {calendarOpen ? (
-                <ChevronUp className="h-5 w-5 text-gray-500" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-gray-500" />
-              )}
-            </button>
-          </CardHeader>
-          {calendarOpen && (
-            <CardContent>
-              <AttendanceCalendar
-                attendance={calendarAttendance.map(record => ({
-                  date: record.date,
-                  status: record.status as 'present' | 'absent' | 'late' | 'half-day' | 'holiday'
-                }))}
-                loading={calendarLoading}
-                token={token}
-                onMonthChange={fetchCalendarAttendance}
+        {/* Filter Drawer */}
+        <FilterDrawer
+          isOpen={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+          title="Filters"
+          activeFilterCount={getActiveFilterCount()}
+          onApply={applyFilters}
+          onReset={clearFilters}
+        >
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="startDate" className="text-gray-700 mb-1">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full"
               />
-            </CardContent>
-          )}
-        </Card>
+            </div>
+
+            <div>
+              <Label htmlFor="endDate" className="text-gray-700 mb-1">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="status" className="text-gray-700 mb-1">Status</Label>
+              <Select
+                id="status"
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full"
+              >
+                <option value="">All statuses</option>
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+                <option value="late">Late</option>
+                <option value="half-day">Half Day</option>
+              </Select>
+            </div>
+          </div>
+        </FilterDrawer>
 
         {/* Attendance History */}
         <Card>
@@ -668,6 +712,37 @@ export default function AttendancePage() {
             />
           </CardContent>
         </Card>
+
+        {/* Check In/Out Modal */}
+        <CheckInOutModal
+          isOpen={checkInOutModalOpen}
+          onClose={() => setCheckInOutModalOpen(false)}
+          onCheckIn={handleCheckIn}
+          onCheckOut={handleCheckOut}
+          canCheckIn={canCheckIn}
+          canCheckOut={canCheckOut}
+          checkingIn={checkingIn}
+          checkingOut={checkingOut}
+          todayAttendance={todayAttendance}
+        />
+
+        {/* Calendar View Modal */}
+        <DynamicModal
+          isOpen={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          title="Calendar View"
+          maxWidth="max-w-4xl"
+        >
+          <AttendanceCalendar
+            attendance={calendarAttendance.map(record => ({
+              date: record.date,
+              status: record.status as 'present' | 'absent' | 'late' | 'half-day' | 'holiday'
+            }))}
+            loading={calendarLoading}
+            token={token}
+            onMonthChange={fetchCalendarAttendance}
+          />
+        </DynamicModal>
       </div>
     </Layout>
   );

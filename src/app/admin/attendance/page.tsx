@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, ChevronUp, Plus, Edit } from 'lucide-react';
+import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, Plus, Edit, Clock } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import ManualAttendanceModal from '@/components/attendance/ManualAttendanceModal';
+import DynamicModal from '@/components/ui/dynamic-modal';
 
 interface AttendanceRecord {
   _id: string;
@@ -191,6 +192,12 @@ export default function AdminAttendancePage() {
   const [calendarEmployeeId, setCalendarEmployeeId] = useState<string>('');
   const [manualAttendanceModalOpen, setManualAttendanceModalOpen] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState<AttendanceRecord | null>(null);
+  const [attendanceStats, setAttendanceStats] = useState({
+    present: 0,
+    'half-day': 0,
+    absent: 0,
+    late: 0,
+  });
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -207,6 +214,49 @@ export default function AdminAttendancePage() {
     limit: '10'
   });
 
+  const fetchAttendanceStats = useCallback(async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      // Fetch all records for statistics (no pagination)
+      queryParams.append('limit', '1000'); // Large limit to get all records
+      
+      if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
+      
+      // If no month filter, default to current month
+      if (!filters.month) {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        queryParams.append('month', currentMonth.toString());
+        queryParams.append('year', currentYear.toString());
+      } else {
+        if (filters.month) queryParams.append('month', filters.month);
+        if (filters.year) queryParams.append('year', filters.year);
+      }
+      
+      // Don't filter by status for statistics - we want all statuses
+
+      const response = await fetch(`/api/attendance?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const allRecords = data.attendance || [];
+        setAttendanceStats({
+          present: allRecords.filter((r: AttendanceRecord) => r.status === 'present').length,
+          'half-day': allRecords.filter((r: AttendanceRecord) => r.status === 'half-day').length,
+          absent: allRecords.filter((r: AttendanceRecord) => r.status === 'absent').length,
+          late: allRecords.filter((r: AttendanceRecord) => r.status === 'late').length,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch attendance statistics:', error);
+    }
+  }, [filters.employeeId, filters.month, filters.year, token]);
+
   const fetchAttendance = useCallback(async (page = 1) => {
     try {
       setLoading(true);
@@ -214,8 +264,19 @@ export default function AdminAttendancePage() {
       queryParams.append('page', page.toString());
       queryParams.append('limit', filters.limit);
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
-      if (filters.month) queryParams.append('month', filters.month);
-      if (filters.year) queryParams.append('year', filters.year);
+      
+      // If no month filter, default to current month
+      if (!filters.month) {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        queryParams.append('month', currentMonth.toString());
+        queryParams.append('year', currentYear.toString());
+      } else {
+        if (filters.month) queryParams.append('month', filters.month);
+        if (filters.year) queryParams.append('year', filters.year);
+      }
+      
       if (filters.status) queryParams.append('status', filters.status);
 
       const response = await fetch(`/api/attendance?${queryParams}`, {
@@ -410,7 +471,10 @@ export default function AdminAttendancePage() {
       limit: '10'
     });
     setPagination((prev: any) => ({ ...prev, page: 1 }));
-    setTimeout(() => fetchAttendance(1), 100);
+    setTimeout(() => {
+      fetchAttendance(1);
+      fetchAttendanceStats();
+    }, 100);
   };
 
   const getActiveFilterCount = () => {
@@ -682,12 +746,13 @@ export default function AdminAttendancePage() {
   useEffect(() => {
     if (token && user?.role === 'admin') {
       fetchAttendance(1);
+      fetchAttendanceStats();
       fetchEmployees();
       if (user.employeeId) {
         fetchPersonalAttendance();
       }
     }
-  }, [token, user, fetchAttendance, fetchEmployees, fetchPersonalAttendance]);
+  }, [token, user, fetchAttendance, fetchAttendanceStats, fetchEmployees, fetchPersonalAttendance]);
 
   // Fetch calendar data when employee selection changes or calendar opens
   useEffect(() => {
@@ -726,6 +791,68 @@ export default function AdminAttendancePage() {
           <h1 className="text-3xl font-bold text-gray-900">Attendance Management</h1>
           {/* <p className="text-gray-600">View and manage all employees&apos; attendance records</p> */}
         </div>
+
+        {/* Attendance Statistics */}
+        <Card>
+          <CardHeader>
+            <CardDescription>
+              {filters.month 
+                ? `Statistics for ${new Date(parseInt(filters.year), parseInt(filters.month) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+                : `Statistics for ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+              }
+              {filters.employeeId && (
+                <span className="ml-2">
+                  - {employees.find(emp => emp.employeeId === filters.employeeId) 
+                    ? `${employees.find(emp => emp.employeeId === filters.employeeId)?.personalInfo.firstName} ${employees.find(emp => emp.employeeId === filters.employeeId)?.personalInfo.lastName}`
+                    : 'Selected Employee'}
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Present</p>
+                  <p className="text-2xl font-bold text-green-600 mt-1">{attendanceStats.present}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Half Day</p>
+                  <p className="text-2xl font-bold text-blue-600 mt-1">{attendanceStats['half-day']}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Absent</p>
+                  <p className="text-2xl font-bold text-red-600 mt-1">{attendanceStats.absent}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Late</p>
+                  <p className="text-2xl font-bold text-yellow-600 mt-1">{attendanceStats.late}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Personal Attendance Section */}
         {user.employeeId && user.role !== 'admin' && (
@@ -855,6 +982,19 @@ export default function AdminAttendancePage() {
             <span>Add Manual Attendance</span>
           </button>
           <button
+            onClick={() => {
+              setCalendarOpen(true);
+              if (token) {
+                const currentDate = new Date();
+                fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
+              }
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <CalendarIcon className="h-4 w-4" />
+            <span>Calendar</span>
+          </button>
+          <button
             onClick={() => setFilterDrawerOpen(true)}
             className="relative flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
@@ -939,57 +1079,6 @@ export default function AdminAttendancePage() {
           </div>
         </FilterDrawer>
 
-        {/* Calendar View */}
-        <Card>
-          <CardHeader>
-            <button
-              onClick={() => setCalendarOpen(!calendarOpen)}
-              className="flex items-center justify-between w-full hover:bg-gray-50 -mx-4 -my-2 px-4 py-2 rounded-md transition-colors"
-            >
-              <CardTitle className="flex items-center space-x-2">
-                <CalendarIcon className="h-5 w-5" />
-                <span>Calendar View</span>
-              </CardTitle>
-              {calendarOpen ? (
-                <ChevronUp className="h-5 w-5 text-gray-500" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-gray-500" />
-              )}
-            </button>
-          </CardHeader>
-          {calendarOpen && (
-            <CardContent>
-              <div className="mb-4">
-                <Label htmlFor="calendarEmployee" className="text-sm font-medium text-gray-700 mb-2 block">
-                  Select Employee
-                </Label>
-                <div className="max-w-xs">
-                  <EmployeeDropdown
-                    value={calendarEmployeeId}
-                    onChange={(value) => {
-                      setCalendarEmployeeId(value);
-                      // Reset calendar attendance when employee changes
-                      setCalendarAttendance([]);
-                    }}
-                    employees={employees}
-                    placeholder="All employees"
-                  />
-                </div>
-              </div>
-              <AttendanceCalendar
-                attendance={calendarAttendance.map(record => ({
-                  date: record.date,
-                  status: record.status as 'present' | 'absent' | 'late' | 'half-day' | 'holiday'
-                }))}
-                loading={calendarLoading}
-                employeeId={calendarEmployeeId || filters.employeeId || undefined}
-                token={token}
-                onMonthChange={fetchCalendarAttendance}
-              />
-            </CardContent>
-          )}
-        </Card>
-
         {/* Attendance Records */}
         <Card>
           <CardHeader>
@@ -1026,6 +1115,7 @@ export default function AdminAttendancePage() {
           }}
           onSuccess={() => {
             fetchAttendance(pagination.page);
+            fetchAttendanceStats();
             if (calendarOpen && token) {
               const currentDate = new Date();
               fetchCalendarAttendance(currentDate.getFullYear(), currentDate.getMonth() + 1);
@@ -1036,6 +1126,42 @@ export default function AdminAttendancePage() {
           token={token}
           attendanceRecord={editingAttendance}
         />
+
+        {/* Calendar View Modal */}
+        <DynamicModal
+          isOpen={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          title="Calendar View"
+          maxWidth="max-w-4xl"
+        >
+          <div className="mb-4">
+            <Label htmlFor="calendarEmployee" className="text-sm font-medium text-gray-700 mb-2 block">
+              Select Employee
+            </Label>
+            <div className="max-w-xs">
+              <EmployeeDropdown
+                value={calendarEmployeeId}
+                onChange={(value) => {
+                  setCalendarEmployeeId(value);
+                  // Reset calendar attendance when employee changes
+                  setCalendarAttendance([]);
+                }}
+                employees={employees}
+                placeholder="All employees"
+              />
+            </div>
+          </div>
+          <AttendanceCalendar
+            attendance={calendarAttendance.map(record => ({
+              date: record.date,
+              status: record.status as 'present' | 'absent' | 'late' | 'half-day' | 'holiday'
+            }))}
+            loading={calendarLoading}
+            employeeId={calendarEmployeeId || filters.employeeId || undefined}
+            token={token}
+            onMonthChange={fetchCalendarAttendance}
+          />
+        </DynamicModal>
       </div>
     </Layout>
   );
