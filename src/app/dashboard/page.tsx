@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Calendar, DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { Users, Calendar, DollarSign, TrendingUp, Clock, Construction } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import AddEmployeeModal from '@/components/employees/AddEmployeeModal';
 
@@ -35,6 +35,7 @@ export function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [employeeName, setEmployeeName] = useState<string>('');
 
   const fetchDashboardStats = useCallback(async () => {
     try {
@@ -61,11 +62,84 @@ export function DashboardContent() {
     }
   }, [token]);
 
+  // Fetch employee name for employees
+  const fetchEmployeeName = useCallback(async () => {
+    if (!token || !user?.employeeId || user?.role === 'admin') return;
+    
+    try {
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.employee?.personalInfo) {
+          const name = `${data.employee.personalInfo.firstName} ${data.employee.personalInfo.lastName}`;
+          setEmployeeName(name);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch employee name:', error);
+    }
+  }, [token, user?.employeeId, user?.role]);
+
   useEffect(() => {
     if (token) {
-      fetchDashboardStats();
+      if (user?.role === 'admin') {
+        fetchDashboardStats();
+      } else {
+        setLoading(false);
+        fetchEmployeeName();
+      }
     }
-  }, [token, fetchDashboardStats]);
+  }, [token, fetchDashboardStats, fetchEmployeeName, user?.role]);
+
+  // For employees, show attractive "Under Process" message
+  if (user?.role !== 'admin') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">
+            Welcome back, {employeeName || user?.email || 'Employee'}
+          </p>
+        </div>
+        
+        {/* Attractive Under Process Card */}
+        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 shadow-lg">
+          <CardContent className="p-12">
+            <div className="flex flex-col items-center justify-center space-y-6">
+              {/* Icon with animated background */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-blue-200 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 rounded-full p-6 shadow-xl">
+                  <Construction className="h-16 w-16 text-white" />
+                </div>
+              </div>
+              
+              {/* Main Text */}
+              <div className="text-center space-y-3">
+                <h2 className="text-3xl font-bold text-gray-800">Under Process</h2>
+                <p className="text-lg text-gray-600 max-w-md">
+                  We're working hard to bring you an amazing dashboard experience. 
+                  Stay tuned for exciting updates!
+                </p>
+              </div>
+              
+              {/* Decorative Elements */}
+              <div className="flex items-center space-x-2 mt-4">
+                <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="h-2 w-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -274,38 +348,40 @@ export function DashboardContent() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button 
-              onClick={handleAddEmployee}
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <Users className="h-8 w-8 text-blue-600 mb-2" />
-              <span className="text-sm font-medium">Add Employee</span>
-            </button>
-            <button 
-              onClick={handleCheckInOut}
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <Clock className="h-8 w-8 text-green-600 mb-2" />
-              <span className="text-sm font-medium">Check In/Out</span>
-            </button>
-            <button 
-              onClick={handleViewReports}
-              className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <TrendingUp className="h-8 w-8 text-purple-600 mb-2" />
-              <span className="text-sm font-medium">View Reports</span>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Quick Actions - Only show for admins */}
+      {user?.role === 'admin' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <button 
+                onClick={handleAddEmployee}
+                className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Users className="h-8 w-8 text-blue-600 mb-2" />
+                <span className="text-sm font-medium">Add Employee</span>
+              </button>
+              <button 
+                onClick={handleCheckInOut}
+                className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Clock className="h-8 w-8 text-green-600 mb-2" />
+                <span className="text-sm font-medium">Check In/Out</span>
+              </button>
+              <button 
+                onClick={handleViewReports}
+                className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <TrendingUp className="h-8 w-8 text-purple-600 mb-2" />
+                <span className="text-sm font-medium">View Reports</span>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
         {/* Modals */}
         <AddEmployeeModal 
