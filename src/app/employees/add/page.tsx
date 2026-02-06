@@ -246,7 +246,7 @@ function AddEmployeePageContent() {
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back</span>
@@ -730,6 +730,7 @@ function AddEmployeePageContent() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                 >
                   Cancel
                 </Button>

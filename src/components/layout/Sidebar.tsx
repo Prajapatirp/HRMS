@@ -18,6 +18,7 @@ import {
   LogOut,
   Clock,
   X,
+  Ticket,
 } from 'lucide-react';
 
 const getNavigation = (userRole: string) => {
@@ -27,6 +28,7 @@ const getNavigation = (userRole: string) => {
         { name: 'Dashboard', href: '/dashboard', icon: Home },
         { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
         { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
+        { name: 'Tickets', href: '/admin/tickets', icon: Ticket },
         { name: 'Projects', href: '/admin/projects', icon: FileText },
         { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
         { name: 'Performance', href: '/performance', icon: TrendingUp },
@@ -45,6 +47,7 @@ const getNavigation = (userRole: string) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Attendance', href: '/attendance', icon: Calendar },
     { name: 'Timesheets', href: '/timesheets', icon: Clock },
+    { name: 'Tickets', href: '/tickets', icon: Ticket },
     { name: 'Payroll', href: '/payroll', icon: DollarSign },
     { name: 'Performance', href: '/performance', icon: TrendingUp },
     { name: 'Notifications', href: '/notifications', icon: Bell },

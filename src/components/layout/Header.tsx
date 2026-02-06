@@ -166,7 +166,7 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
               aria-label="Toggle menu"
               title="Toggle menu"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 text-blue-600" />
             </Button>
             
             {/* Desktop sidebar toggle */}
@@ -179,9 +179,9 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {sidebarCollapsed ? (
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-5 w-5 text-blue-600" />
               ) : (
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-5 w-5 text-blue-600" />
               )}
             </Button>
             
@@ -215,15 +215,15 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
             )}
             
             <Button variant="outline" size="icon" className="relative bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5 text-blue-600" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
             </Button>
             
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">
+                {/* <p className="text-sm font-medium text-gray-900">
                   {user?.email}
-                </p>
+                </p> */}
                 <p className="text-xs text-gray-500 capitalize">
                   {user?.role}
                 </p>

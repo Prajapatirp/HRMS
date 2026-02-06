@@ -112,3 +112,148 @@ export const sendCheckoutReminderEmail = async (email: string, employeeName: str
   }
 };
 
+export const sendTicketCreatedEmailToAdmin = async (adminEmail: string, ticketId: string, employeeName: string, ticketType: string, subject: string, priority: string) => {
+  const priorityColors: Record<string, string> = {
+    'High': '#dc2626',
+    'Medium': '#f59e0b',
+    'Low': '#10b981',
+  };
+
+  const mailOptions = {
+    from: 'admin@yopmail.com',
+    to: adminEmail,
+    subject: `HRMS - New Ticket Created: ${ticketId}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #dc2626; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0;">New Support Ticket Created</h1>
+        </div>
+        <div style="padding: 30px; background-color: #f9fafb;">
+          <p style="font-size: 16px; color: #374151;">Hello Admin,</p>
+          <p style="font-size: 16px; color: #374151;">
+            A new support ticket has been created by an employee. Please review and take appropriate action.
+          </p>
+          <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">Ticket ID:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${ticketId}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">Employee Name:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${employeeName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">Ticket Type:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${ticketType}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">Subject:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${subject}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">Priority:</td>
+                <td style="padding: 8px 0;">
+                  <span style="background-color: ${priorityColors[priority] || '#6b7280'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                    ${priority}
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://dmhrms.vercel.app'}/admin/tickets" 
+               style="background-color: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              View Ticket
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
+            Best regards,<br>
+            HRMS Team
+          </p>
+        </div>
+        <div style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280;">
+          <p style="margin: 0;">This is an automated email. Please do not reply.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending ticket created email to admin:', error);
+    throw new Error('Failed to send email');
+  }
+};
+
+export const sendTicketUpdateEmailToEmployee = async (employeeEmail: string, employeeName: string, ticketId: string, status: string, note?: string) => {
+  const statusColors: Record<string, string> = {
+    'Open': '#3b82f6',
+    'InProgress': '#8b5cf6',
+    'Closed': '#10b981',
+  };
+
+  const mailOptions = {
+    from: 'admin@yopmail.com',
+    to: employeeEmail,
+    subject: `HRMS - Ticket ${ticketId} Status Updated`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0;">Ticket Status Updated</h1>
+        </div>
+        <div style="padding: 30px; background-color: #f9fafb;">
+          <p style="font-size: 16px; color: #374151;">Hello ${employeeName},</p>
+          <p style="font-size: 16px; color: #374151;">
+            Your support ticket status has been updated by the admin.
+          </p>
+          <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">Ticket ID:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${ticketId}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151;">New Status:</td>
+                <td style="padding: 8px 0;">
+                  <span style="background-color: ${statusColors[status] || '#6b7280'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                    ${status}
+                  </span>
+                </td>
+              </tr>
+              ${note ? `
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #374151; vertical-align: top;">Note:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${note}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://dmhrms.vercel.app'}/tickets" 
+               style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              View Ticket
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
+            Best regards,<br>
+            HRMS Team
+          </p>
+        </div>
+        <div style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280;">
+          <p style="margin: 0;">This is an automated email. Please do not reply.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending ticket update email to employee:', error);
+    throw new Error('Failed to send email');
+  }
+};

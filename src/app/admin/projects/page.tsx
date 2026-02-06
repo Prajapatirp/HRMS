@@ -465,7 +465,7 @@ export default function AdminProjectsPage() {
           title={editingProject ? 'Edit Project' : 'Add New Project'}
           maxWidth="max-w-2xl"
           footer={
-            <div className="flex gap-2">
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <Button
                 onClick={() => formik.handleSubmit()}
                 disabled={submitting}
@@ -479,7 +479,7 @@ export default function AdminProjectsPage() {
                   setEditingProject(null);
                   formik.resetForm();
                 }}
-                className="text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
               >
                 Cancel
               </Button>

@@ -824,7 +824,7 @@ export default function TimesheetsPage() {
                 placeholder="What do you plan to work on tomorrow?"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <Button type="submit" disabled={submitting}>
                 {submitting ? 'Saving...' : editingTimesheet ? 'Update' : 'Save'}
               </Button>
@@ -836,6 +836,7 @@ export default function TimesheetsPage() {
                   setEditingTimesheet(null);
                   resetForm();
                 }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
               >
                 Cancel
               </Button>
