@@ -9,6 +9,8 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { MonthDayYearInput } from '@/components/ui/month-day-year-input';
 import { User, Phone, MapPin, DollarSign, ArrowLeft } from 'lucide-react';
 
 const validationSchema = Yup.object({
@@ -359,18 +361,14 @@ function AddEmployeePageContent() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date of Birth <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="date"
+                    <MonthDayYearInput
+                      label="Date Of Birth (MM/DD/YYYY)"
                       name="personalInfo.dateOfBirth"
                       value={formik.values.personalInfo.dateOfBirth}
-                      onChange={(e) => formik.setFieldValue('personalInfo.dateOfBirth', e.target.value)}
-                      onBlur={formik.handleBlur}
-                      className={formik.touched.personalInfo?.dateOfBirth && formik.errors.personalInfo?.dateOfBirth
-                        ? 'border-red-500'
-                        : ''}
+                      onChange={(v) => formik.setFieldValue('personalInfo.dateOfBirth', v)}
+                      onBlur={() => formik.handleBlur('personalInfo.dateOfBirth')}
+                      required
+                      error={!!(formik.touched.personalInfo?.dateOfBirth && formik.errors.personalInfo?.dateOfBirth)}
                     />
                     {formik.touched.personalInfo?.dateOfBirth && formik.errors.personalInfo?.dateOfBirth && (
                       <p className="mt-1 text-sm text-red-600">{String(formik.errors.personalInfo.dateOfBirth)}</p>
@@ -380,25 +378,23 @@ function AddEmployeePageContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Gender <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <Select
                       name="personalInfo.gender"
                       value={formik.values.personalInfo.gender}
                       onChange={(e) => {
                         formik.setFieldValue('personalInfo.gender', e.target.value);
                         formik.setFieldTouched('personalInfo.gender', true);
                       }}
-                      onBlur={(e) => formik.handleBlur(e)}
-                      className={`w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        formik.touched.personalInfo?.gender && formik.errors.personalInfo?.gender
-                          ? 'border-red-500'
-                          : ''
-                      }`}
+                      onBlur={() => formik.handleBlur('personalInfo.gender')}
+                      className={formik.touched.personalInfo?.gender && formik.errors.personalInfo?.gender
+                        ? 'border-red-500'
+                        : ''}
                     >
                       <option value="">Select Gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
-                    </select>
+                    </Select>
                     {formik.touched.personalInfo?.gender && formik.errors.personalInfo?.gender && (
                       <p className="mt-1 text-sm text-red-600">{String(formik.errors.personalInfo.gender)}</p>
                     )}
@@ -592,19 +588,17 @@ function AddEmployeePageContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Department <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <Select
                       name="jobInfo.department"
                       value={formik.values.jobInfo.department}
                       onChange={(e) => {
                         formik.setFieldValue('jobInfo.department', e.target.value);
                         formik.setFieldTouched('jobInfo.department', true);
                       }}
-                      onBlur={(e) => formik.handleBlur(e)}
-                      className={`w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        formik.touched.jobInfo?.department && formik.errors.jobInfo?.department
-                          ? 'border-red-500'
-                          : ''
-                      }`}
+                      onBlur={() => formik.handleBlur('jobInfo.department')}
+                      className={formik.touched.jobInfo?.department && formik.errors.jobInfo?.department
+                        ? 'border-red-500'
+                        : ''}
                     >
                       <option value="">Select Department</option>
                       <option value="hr">Human Resources</option>
@@ -613,7 +607,7 @@ function AddEmployeePageContent() {
                       <option value="marketing">Marketing</option>
                       <option value="sales">Sales</option>
                       <option value="operations">Operations</option>
-                    </select>
+                    </Select>
                     {formik.touched.jobInfo?.department && formik.errors.jobInfo?.department && (
                       <p className="mt-1 text-sm text-red-600">{String(formik.errors.jobInfo.department)}</p>
                     )}
@@ -641,43 +635,37 @@ function AddEmployeePageContent() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Employment Type <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <Select
                       name="jobInfo.employmentType"
                       value={formik.values.jobInfo.employmentType}
                       onChange={(e) => {
                         formik.setFieldValue('jobInfo.employmentType', e.target.value);
                         formik.setFieldTouched('jobInfo.employmentType', true);
                       }}
-                      onBlur={(e) => formik.handleBlur(e)}
-                      className={`w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        formik.touched.jobInfo?.employmentType && formik.errors.jobInfo?.employmentType
-                          ? 'border-red-500'
-                          : ''
-                      }`}
+                      onBlur={() => formik.handleBlur('jobInfo.employmentType')}
+                      className={formik.touched.jobInfo?.employmentType && formik.errors.jobInfo?.employmentType
+                        ? 'border-red-500'
+                        : ''}
                     >
                       <option value="">Select Employment Type</option>
                       <option value="full-time">Full Time</option>
                       <option value="part-time">Part Time</option>
                       <option value="contract">Contract</option>
                       <option value="intern">Intern</option>
-                    </select>
+                    </Select>
                     {formik.touched.jobInfo?.employmentType && formik.errors.jobInfo?.employmentType && (
                       <p className="mt-1 text-sm text-red-600">{String(formik.errors.jobInfo.employmentType)}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Joining Date <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="date"
+                    <MonthDayYearInput
+                      label="Joining Date (MM/DD/YYYY)"
                       name="jobInfo.joiningDate"
                       value={formik.values.jobInfo.joiningDate}
-                      onChange={(e) => formik.setFieldValue('jobInfo.joiningDate', e.target.value)}
-                      onBlur={formik.handleBlur}
-                      className={formik.touched.jobInfo?.joiningDate && formik.errors.jobInfo?.joiningDate
-                        ? 'border-red-500'
-                        : ''}
+                      onChange={(v) => formik.setFieldValue('jobInfo.joiningDate', v)}
+                      onBlur={() => formik.handleBlur('jobInfo.joiningDate')}
+                      required
+                      error={!!(formik.touched.jobInfo?.joiningDate && formik.errors.jobInfo?.joiningDate)}
                     />
                     {formik.touched.jobInfo?.joiningDate && formik.errors.jobInfo?.joiningDate && (
                       <p className="mt-1 text-sm text-red-600">{String(formik.errors.jobInfo.joiningDate)}</p>

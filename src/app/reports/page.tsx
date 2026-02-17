@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { BarChart3, Download, FileText, Users, Calendar, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -280,32 +281,32 @@ ${reportData.attendanceStats.map(status => `- ${status._id}: ${status.count}`).j
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Report Type
                 </label>
-                <select
+                <Select
                   value={selectedReport}
                   onChange={(e) => setSelectedReport(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full"
                 >
                   <option value="overview">Overview Report</option>
                   <option value="attendance">Attendance Report</option>
                   <option value="payroll">Payroll Report</option>
                   <option value="performance">Performance Report</option>
-                </select>
+                </Select>
               </div>
               
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Time Period
                 </label>
-                <select
+                <Select
                   value={selectedPeriod}
                   onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full"
                 >
                   <option value="current-month">Current Month</option>
                   <option value="last-month">Last Month</option>
                   <option value="current-quarter">Current Quarter</option>
                   <option value="current-year">Current Year</option>
-                </select>
+                </Select>
               </div>
               
               <div className="flex items-end">

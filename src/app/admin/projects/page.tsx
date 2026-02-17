@@ -586,10 +586,10 @@ export default function AdminProjectsPage() {
               <textarea
                 id="description"
                 name="description"
-                className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 ${
+                className={`w-full rounded-lg border-2 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y min-h-[80px] ${
                   formik.touched.description && formik.errors.description
-                    ? 'border-red-500'
-                    : 'border-gray-300'
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-300 hover:border-gray-400'
                 }`}
                 rows={3}
                 value={formik.values.description}

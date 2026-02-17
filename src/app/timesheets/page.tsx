@@ -805,7 +805,7 @@ export default function TimesheetsPage() {
               <Label htmlFor="taskDetails">Task Details</Label>
               <textarea
                 id="taskDetails"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y min-h-[80px] hover:border-gray-400"
                 rows={4}
                 value={formData.taskDetails}
                 onChange={(e) => setFormData({ ...formData, taskDetails: e.target.value })}
@@ -817,7 +817,7 @@ export default function TimesheetsPage() {
               <Label htmlFor="planForTomorrow">Plan For Tomorrow (Optional)</Label>
               <textarea
                 id="planForTomorrow"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y min-h-[80px] hover:border-gray-400"
                 rows={3}
                 value={formData.planForTomorrow}
                 onChange={(e) => setFormData({ ...formData, planForTomorrow: e.target.value })}

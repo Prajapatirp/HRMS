@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Ticket from '@/models/Ticket';
-import User from '@/models/User';
 import Employee from '@/models/Employee';
 import { requireAuth } from '@/middleware/auth';
 import { sendTicketUpdateEmailToEmployee } from '@/lib/email';

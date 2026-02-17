@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, X, Plus, Trash2, Star } from 'lucide-react';
@@ -281,11 +282,11 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                     No employees found. Please ensure employees are added to the system.
                   </div>
                 ) : (
-                  <select
+                  <Select
                     id="employeeId"
                     value={formData.employeeId}
                     onChange={(e) => handleInputChange('employeeId', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full"
                     required
                   >
                     <option value="">Select an employee</option>
@@ -295,22 +296,22 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                         {employee.jobInfo.department && ` (${employee.jobInfo.department})`}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <select
+                <Select
                   id="status"
                   value={formData.status}
                   onChange={(e) => handleInputChange('status', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full"
                 >
                   <option value="draft">Draft</option>
                   <option value="submitted">Submitted</option>
                   <option value="reviewed">Reviewed</option>
                   <option value="approved">Approved</option>
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -569,7 +570,7 @@ export default function CreateReviewModal({ isOpen, onClose, onSuccess }: Create
                 value={formData.reviewerComments}
                 onChange={(e) => handleInputChange('reviewerComments', e.target.value)}
                 placeholder="Enter reviewer comments"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y min-h-[80px] hover:border-gray-400"
                 rows={4}
                 required
               />

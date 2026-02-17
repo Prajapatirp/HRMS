@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { X, User, Phone, MapPin, DollarSign } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { MonthDayYearInput } from '@/components/ui/month-day-year-input';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -167,7 +169,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.firstName}
                   onChange={(e) => handleInputChange('personalInfo', 'firstName', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -179,7 +181,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.lastName}
                   onChange={(e) => handleInputChange('personalInfo', 'lastName', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -191,7 +193,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.email}
                   onChange={(e) => handleInputChange('personalInfo', 'email', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -203,35 +205,31 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.phone}
                   onChange={(e) => handleInputChange('personalInfo', 'phone', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth *
-                </label>
-                <input
-                  type="date"
+                <MonthDayYearInput
+                  label="Date Of Birth (MM/DD/YYYY)"
                   required
                   value={formData.personalInfo.dateOfBirth}
-                  onChange={(e) => handleInputChange('personalInfo', 'dateOfBirth', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(v) => handleInputChange('personalInfo', 'dateOfBirth', v)}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Gender *
                 </label>
-                <select
+                <Select
                   required
                   value={formData.personalInfo.gender}
                   onChange={(e) => handleInputChange('personalInfo', 'gender', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
-                </select>
+                </Select>
               </div>
             </div>
           </div>
@@ -252,7 +250,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.address.street}
                   onChange={(e) => handleInputChange('personalInfo', 'address.street', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -264,7 +262,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.address.city}
                   onChange={(e) => handleInputChange('personalInfo', 'address.city', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -276,7 +274,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.address.state}
                   onChange={(e) => handleInputChange('personalInfo', 'address.state', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -288,7 +286,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.address.zipCode}
                   onChange={(e) => handleInputChange('personalInfo', 'address.zipCode', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -300,7 +298,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.address.country}
                   onChange={(e) => handleInputChange('personalInfo', 'address.country', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
             </div>
@@ -322,7 +320,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.emergencyContact.name}
                   onChange={(e) => handleInputChange('personalInfo', 'emergencyContact.name', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -334,7 +332,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.emergencyContact.relationship}
                   onChange={(e) => handleInputChange('personalInfo', 'emergencyContact.relationship', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -346,7 +344,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.personalInfo.emergencyContact.phone}
                   onChange={(e) => handleInputChange('personalInfo', 'emergencyContact.phone', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
             </div>
@@ -363,11 +361,11 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Department *
                 </label>
-                <select
+                <Select
                   required
                   value={formData.jobInfo.department}
                   onChange={(e) => handleInputChange('jobInfo', 'department', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full"
                 >
                   <option value="">Select Department</option>
                   <option value="hr">Human Resources</option>
@@ -376,7 +374,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   <option value="marketing">Marketing</option>
                   <option value="sales">Sales</option>
                   <option value="operations">Operations</option>
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -387,35 +385,31 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.jobInfo.designation}
                   onChange={(e) => handleInputChange('jobInfo', 'designation', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Employment Type *
                 </label>
-                <select
+                <Select
                   required
                   value={formData.jobInfo.employmentType}
                   onChange={(e) => handleInputChange('jobInfo', 'employmentType', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full"
                 >
                   <option value="full-time">Full Time</option>
                   <option value="part-time">Part Time</option>
                   <option value="contract">Contract</option>
                   <option value="intern">Intern</option>
-                </select>
+                </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Joining Date *
-                </label>
-                <input
-                  type="date"
+                <MonthDayYearInput
+                  label="Joining Date (MM/DD/YYYY)"
                   required
                   value={formData.jobInfo.joiningDate}
-                  onChange={(e) => handleInputChange('jobInfo', 'joiningDate', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(v) => handleInputChange('jobInfo', 'joiningDate', v)}
                 />
               </div>
               <div>
@@ -427,7 +421,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.jobInfo.salary}
                   onChange={(e) => handleInputChange('jobInfo', 'salary', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
               <div>
@@ -439,7 +433,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmpl
                   required
                   value={formData.jobInfo.workLocation}
                   onChange={(e) => handleInputChange('jobInfo', 'workLocation', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-400 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-10 w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-gray-400"
                 />
               </div>
             </div>

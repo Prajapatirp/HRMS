@@ -6,6 +6,7 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MonthDayYearInput } from '@/components/ui/month-day-year-input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Plus, Filter, Edit, Trash2, Eye, Clock } from 'lucide-react';
@@ -649,13 +650,11 @@ export default function TicketsPage() {
             </div>
 
             <div>
-              <Label htmlFor="date" className="text-gray-700 mb-1">Date:</Label>
-              <Input
+              <MonthDayYearInput
+                label="Date (MM/DD/YYYY)"
                 id="date"
-                type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full"
+                onChange={(v) => setFormData({ ...formData, date: v })}
               />
             </div>
 

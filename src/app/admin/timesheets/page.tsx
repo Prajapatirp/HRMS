@@ -870,7 +870,7 @@ export default function AdminTimesheetsPage() {
                   <Label htmlFor="rejectionReason">Rejection Reason (Optional)</Label>
                   <textarea
                     id="rejectionReason"
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-1"
+                    className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y min-h-[80px] hover:border-gray-400 mt-1"
                     rows={3}
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}

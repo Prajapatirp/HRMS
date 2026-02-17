@@ -75,21 +75,21 @@ function RecordsPerPageDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-24 bg-blue-50 border border-blue-300 text-blue-600 rounded-md px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer flex items-center justify-between"
+        className="min-w-[7rem] bg-white border-2 border-gray-300 rounded-lg px-3 py-2 text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex items-center justify-between gap-2"
       >
         <span>{value} / page</span>
-        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-gray-500 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      
+
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
             style={{ pointerEvents: 'auto' }}
           />
-          <div 
-            className="absolute right-0 bottom-full mb-1 w-32 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden"
+          <div
+            className="absolute right-0 bottom-full mb-1 w-36 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden"
             style={{ zIndex: 9999 }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -103,10 +103,10 @@ function RecordsPerPageDropdown({
                     onChange(option);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium text-gray-900 transition-colors border-l-4 ${
                     value === option
-                      ? 'bg-blue-50 text-gray-700 border-l-2 border-blue-500'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-50 border-blue-500'
+                      : 'bg-white border-transparent hover:bg-blue-50/50'
                   }`}
                 >
                   {option} / page

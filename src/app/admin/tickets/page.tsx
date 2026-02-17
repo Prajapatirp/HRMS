@@ -50,7 +50,6 @@ export default function AdminTicketsPage() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [trackModalOpen, setTrackModalOpen] = useState(false);
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [filters, setFilters] = useState({
     ticketType: '',
@@ -168,7 +167,6 @@ export default function AdminTicketsPage() {
       });
 
       if (response.ok) {
-        setStatusModalOpen(false);
         setStatusUpdate({ status: '', note: '' });
         fetchTickets(pagination.page);
         alert('Ticket status updated successfully!');
@@ -671,7 +669,7 @@ export default function AdminTicketsPage() {
                   id="note"
                   value={statusUpdate.note}
                   onChange={(e) => setStatusUpdate({ ...statusUpdate, note: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+                  className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y min-h-[80px] hover:border-gray-400"
                   rows={4}
                   placeholder="Add a note about this status update..."
                 />
