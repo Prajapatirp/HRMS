@@ -60,11 +60,20 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     };
 
     const handleSelect = (optionValue: string) => {
+      if (selectRef.current) {
+        selectRef.current.value = optionValue;
+      }
       if (onChange) {
         const syntheticEvent = {
-          target: selectRef.current ?? { value: optionValue },
+          target: {
+            value: optionValue,
+            name: name ?? selectRef.current?.name ?? '',
+          },
+          currentTarget: {
+            value: optionValue,
+            name: name ?? selectRef.current?.name ?? '',
+          },
         } as React.ChangeEvent<HTMLSelectElement>;
-        if (!selectRef.current) (syntheticEvent.target as { value: string }).value = optionValue;
         onChange(syntheticEvent);
       }
       handleClose();
