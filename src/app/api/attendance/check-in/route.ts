@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/models/Attendance';
 import { requireAuth, AuthenticatedRequest } from '@/middleware/auth';
+import { parseLocationPayload } from '@/lib/attendanceValidation';
 
 async function checkIn(req: AuthenticatedRequest) {
   try {
@@ -15,7 +16,17 @@ async function checkIn(req: AuthenticatedRequest) {
       );
     }
     
-    const { employeeId, notes } = await req.json();
+    const body = await req.json();
+    const { employeeId, notes } = body;
+
+    const locationResult = parseLocationPayload(body);
+    if (!locationResult.valid) {
+      return NextResponse.json(
+        { error: locationResult.error },
+        { status: 400 }
+      );
+    }
+    const { location } = locationResult;
     
     // For admin users, allow specifying employeeId, otherwise use their own
     const targetEmployeeId = (user.role === 'admin' && employeeId) ? employeeId : user.employeeId;
@@ -48,6 +59,9 @@ async function checkIn(req: AuthenticatedRequest) {
     if (existingAttendance) {
       // Update existing record
       existingAttendance.checkIn = checkInTime;
+      existingAttendance.checkInLatitude = location.latitude;
+      existingAttendance.checkInLongitude = location.longitude;
+      existingAttendance.checkInAccuracy = location.accuracy;
       existingAttendance.status = 'present';
       if (notes) existingAttendance.notes = notes;
       await existingAttendance.save();
@@ -57,6 +71,9 @@ async function checkIn(req: AuthenticatedRequest) {
         employeeId: targetEmployeeId,
         date: today,
         checkIn: checkInTime,
+        checkInLatitude: location.latitude,
+        checkInLongitude: location.longitude,
+        checkInAccuracy: location.accuracy,
         status: 'present',
         notes,
       });
@@ -66,6 +83,11 @@ async function checkIn(req: AuthenticatedRequest) {
     return NextResponse.json({
       message: 'Checked in successfully',
       checkInTime,
+      location: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: location.accuracy,
+      },
     });
 
   } catch (error) {

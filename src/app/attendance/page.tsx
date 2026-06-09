@@ -13,13 +13,19 @@ import { formatDate } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import CheckInOutModal from '@/components/attendance/CheckInOutModal';
+import AttendanceLocationCell from '@/components/attendance/AttendanceLocationCell';
 import DynamicModal from '@/components/ui/dynamic-modal';
+import { useAttendanceCheckInOut } from '@/hooks/useAttendanceCheckInOut';
 
 interface AttendanceRecord {
   _id: string;
   date: string;
   checkIn?: string;
   checkOut?: string;
+  checkInLatitude?: number;
+  checkInLongitude?: number;
+  checkOutLatitude?: number;
+  checkOutLongitude?: number;
   totalHours?: number;
   overtimeHours?: number;
   status: string;
@@ -47,8 +53,6 @@ export default function AttendancePage() {
     hasPrev: false,
   });
   const [loading, setLoading] = useState(true);
-  const [checkingIn, setCheckingIn] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [checkInOutModalOpen, setCheckInOutModalOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -158,59 +162,19 @@ export default function AttendancePage() {
     }
   }, [token, fetchAttendance, fetchAttendanceStats]);
 
-  const handleCheckIn = async () => {
-    setCheckingIn(true);
-    try {
-      const response = await fetch('/api/attendance/check-in', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
+  const refreshAfterCheckInOut = useCallback(async () => {
+    await fetchAttendance();
+    await fetchAttendanceStats();
+  }, [fetchAttendance, fetchAttendanceStats]);
 
-      if (response.ok) {
-        await fetchAttendance(); // Refresh data
-      } else {
-        const errorData = await response.json();
-        console.error('Check-in failed:', errorData.error);
-        alert(`Check-in failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Check-in failed:', error);
-      alert('Check-in failed. Please try again.');
-    } finally {
-      setCheckingIn(false);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    setCheckingOut(true);
-    try {
-      const response = await fetch('/api/attendance/check-out', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        await fetchAttendance(); // Refresh data
-      } else {
-        const errorData = await response.json();
-        console.error('Check-out failed:', errorData.error);
-        alert(`Check-out failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Check-out failed:', error);
-      alert('Check-out failed. Please try again.');
-    } finally {
-      setCheckingOut(false);
-    }
-  };
+  const {
+    checkingIn,
+    checkingOut,
+    locationError,
+    clearLocationError,
+    handleCheckIn,
+    handleCheckOut,
+  } = useAttendanceCheckInOut(token, refreshAfterCheckInOut);
 
   const getTodayAttendance = () => {
     const today = new Date().toDateString();
@@ -334,6 +298,25 @@ export default function AttendancePage() {
       ) : <span className="text-sm text-gray-400">-</span>,
     },
     {
+      key: 'checkInLocation',
+      label: 'Log In Latitude - Longitude',
+      minWidth: '200px',
+      render: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkInLatitude}
+          longitude={record.checkInLongitude}
+        />
+      ),
+      mobileLabel: 'Log In Location',
+      mobileRender: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkInLatitude}
+          longitude={record.checkInLongitude}
+          className="text-xs"
+        />
+      ),
+    },
+    {
       key: 'checkOut',
       label: 'Check Out',
       minWidth: '120px',
@@ -352,6 +335,25 @@ export default function AttendancePage() {
           </span>
         </div>
       ) : <span className="text-sm text-gray-400">-</span>,
+    },
+    {
+      key: 'checkOutLocation',
+      label: 'Log Out Latitude - Longitude',
+      minWidth: '200px',
+      render: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkOutLatitude}
+          longitude={record.checkOutLongitude}
+        />
+      ),
+      mobileLabel: 'Log Out Location',
+      mobileRender: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkOutLatitude}
+          longitude={record.checkOutLongitude}
+          className="text-xs"
+        />
+      ),
     },
     {
       key: 'totalHours',
@@ -448,6 +450,25 @@ export default function AttendancePage() {
             ) : (
               <span className="text-xs sm:text-sm text-gray-400">-</span>
             )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 pb-3 border-b">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 mb-1.5">Log In Latitude - Longitude</p>
+            <AttendanceLocationCell
+              latitude={record.checkInLatitude}
+              longitude={record.checkInLongitude}
+              className="text-xs"
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 mb-1.5">Log Out Latitude - Longitude</p>
+            <AttendanceLocationCell
+              latitude={record.checkOutLatitude}
+              longitude={record.checkOutLongitude}
+              className="text-xs"
+            />
           </div>
         </div>
         
@@ -723,6 +744,8 @@ export default function AttendancePage() {
           canCheckOut={canCheckOut}
           checkingIn={checkingIn}
           checkingOut={checkingOut}
+          locationError={locationError}
+          onClearError={clearLocationError}
           todayAttendance={todayAttendance}
         />
 

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Bell, Menu, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CheckInOutModal from '@/components/attendance/CheckInOutModal';
+import { useAttendanceCheckInOut } from '@/hooks/useAttendanceCheckInOut';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -25,8 +26,6 @@ interface AttendanceRecord {
 export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed }: HeaderProps) {
   const { user, token } = useAuth();
   const [checkInOutModalOpen, setCheckInOutModalOpen] = useState(false);
-  const [checkingIn, setCheckingIn] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord | null>(null);
 
   // Fetch today's attendance to determine check-in/out status
@@ -95,59 +94,14 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
     }
   }, [checkInOutModalOpen, token, user?.employeeId, fetchTodayAttendance]);
 
-  const handleCheckIn = async () => {
-    setCheckingIn(true);
-    try {
-      const response = await fetch('/api/attendance/check-in', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        await fetchTodayAttendance();
-      } else {
-        const errorData = await response.json();
-        console.error('Check-in failed:', errorData.error);
-        alert(`Check-in failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Check-in failed:', error);
-      alert('Check-in failed. Please try again.');
-    } finally {
-      setCheckingIn(false);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    setCheckingOut(true);
-    try {
-      const response = await fetch('/api/attendance/check-out', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        await fetchTodayAttendance();
-      } else {
-        const errorData = await response.json();
-        console.error('Check-out failed:', errorData.error);
-        alert(`Check-out failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Check-out failed:', error);
-      alert('Check-out failed. Please try again.');
-    } finally {
-      setCheckingOut(false);
-    }
-  };
+  const {
+    checkingIn,
+    checkingOut,
+    locationError,
+    clearLocationError,
+    handleCheckIn,
+    handleCheckOut,
+  } = useAttendanceCheckInOut(token, fetchTodayAttendance);
 
   const canCheckIn = !todayAttendance?.checkIn;
   const canCheckOut = !!(todayAttendance?.checkIn && !todayAttendance?.checkOut);
@@ -249,6 +203,8 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
           canCheckOut={canCheckOut}
           checkingIn={checkingIn}
           checkingOut={checkingOut}
+          locationError={locationError}
+          onClearError={clearLocationError}
           todayAttendance={todayAttendance}
         />
       )}

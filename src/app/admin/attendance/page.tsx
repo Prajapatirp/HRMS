@@ -8,13 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, Plus, Edit, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Filter, User, Calendar as CalendarIcon, ChevronDown, Plus, Edit, Clock, AlertCircle, MapPin } from 'lucide-react';
 import DynamicTable, { Column } from '@/components/ui/dynamic-table';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import AttendanceCalendar from '@/components/attendance/AttendanceCalendar';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import ManualAttendanceModal from '@/components/attendance/ManualAttendanceModal';
+import AttendanceLocationCell from '@/components/attendance/AttendanceLocationCell';
 import DynamicModal from '@/components/ui/dynamic-modal';
+import { useAttendanceCheckInOut } from '@/hooks/useAttendanceCheckInOut';
 
 interface AttendanceRecord {
   _id: string;
@@ -22,6 +24,10 @@ interface AttendanceRecord {
   date: string;
   checkIn?: string;
   checkOut?: string;
+  checkInLatitude?: number;
+  checkInLongitude?: number;
+  checkOutLatitude?: number;
+  checkOutLongitude?: number;
   totalHours?: number;
   overtimeHours?: number;
   status: string;
@@ -183,8 +189,6 @@ export default function AdminAttendancePage() {
   const [personalAttendance, setPersonalAttendance] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checkingIn, setCheckingIn] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarAttendance, setCalendarAttendance] = useState<AttendanceRecord[]>([]);
@@ -390,59 +394,14 @@ export default function AdminAttendancePage() {
     }
   }, [token, calendarEmployeeId, filters.employeeId]);
 
-  const handleCheckIn = async () => {
-    setCheckingIn(true);
-    try {
-      const response = await fetch('/api/attendance/check-in', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        await fetchPersonalAttendance(); // Refresh personal data
-      } else {
-        const errorData = await response.json();
-        console.error('Check-in failed:', errorData.error);
-        alert(`Check-in failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Check-in failed:', error);
-      alert('Check-in failed. Please try again.');
-    } finally {
-      setCheckingIn(false);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    setCheckingOut(true);
-    try {
-      const response = await fetch('/api/attendance/check-out', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        await fetchPersonalAttendance(); // Refresh personal data
-      } else {
-        const errorData = await response.json();
-        console.error('Check-out failed:', errorData.error);
-        alert(`Check-out failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Check-out failed:', error);
-      alert('Check-out failed. Please try again.');
-    } finally {
-      setCheckingOut(false);
-    }
-  };
+  const {
+    checkingIn,
+    checkingOut,
+    locationError,
+    clearLocationError,
+    handleCheckIn,
+    handleCheckOut,
+  } = useAttendanceCheckInOut(token, fetchPersonalAttendance);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev: any) => ({
@@ -574,6 +533,25 @@ export default function AdminAttendancePage() {
       ) : <span className="text-sm text-gray-400">Not checked in</span>,
     },
     {
+      key: 'checkInLocation',
+      label: 'Log In Latitude - Longitude',
+      minWidth: '200px',
+      render: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkInLatitude}
+          longitude={record.checkInLongitude}
+        />
+      ),
+      mobileLabel: 'Log In Location',
+      mobileRender: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkInLatitude}
+          longitude={record.checkInLongitude}
+          className="text-xs"
+        />
+      ),
+    },
+    {
       key: 'checkOut',
       label: 'Check Out',
       minWidth: '140px',
@@ -590,6 +568,25 @@ export default function AdminAttendancePage() {
           <span className="text-sm font-medium">{formatDateTime(value)}</span>
         </div>
       ) : <span className="text-sm text-gray-400">Not checked out</span>,
+    },
+    {
+      key: 'checkOutLocation',
+      label: 'Log Out Latitude - Longitude',
+      minWidth: '200px',
+      render: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkOutLatitude}
+          longitude={record.checkOutLongitude}
+        />
+      ),
+      mobileLabel: 'Log Out Location',
+      mobileRender: (_, record) => (
+        <AttendanceLocationCell
+          latitude={record.checkOutLatitude}
+          longitude={record.checkOutLongitude}
+          className="text-xs"
+        />
+      ),
     },
     {
       key: 'totalHours',
@@ -699,6 +696,24 @@ export default function AdminAttendancePage() {
             ) : (
               <span className="text-sm text-gray-400">Not checked out</span>
             )}
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Log In Latitude - Longitude</p>
+            <AttendanceLocationCell
+              latitude={record.checkInLatitude}
+              longitude={record.checkInLongitude}
+              className="text-xs"
+            />
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Log Out Latitude - Longitude</p>
+            <AttendanceLocationCell
+              latitude={record.checkOutLatitude}
+              longitude={record.checkOutLongitude}
+              className="text-xs"
+            />
           </div>
           
           <div>
@@ -872,6 +887,18 @@ export default function AdminAttendancePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+                <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+                <p>Your current location will be captured when you check in or check out.</p>
+              </div>
+
+              {locationError && (
+                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700">{locationError}</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   {todayPersonalAttendance?.checkIn && (
@@ -905,20 +932,26 @@ export default function AdminAttendancePage() {
                 <div className="flex space-x-2">
                   {canCheckIn && (
                     <Button 
-                      onClick={handleCheckIn} 
-                      disabled={checkingIn}
+                      onClick={() => {
+                        clearLocationError();
+                        handleCheckIn();
+                      }} 
+                      disabled={checkingIn || checkingOut}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      {checkingIn ? 'Checking In...' : 'Check In'}
+                      {checkingIn ? 'Fetching location...' : 'Check In'}
                     </Button>
                   )}
                   {canCheckOut && (
                     <Button 
-                      onClick={handleCheckOut} 
-                      disabled={checkingOut}
+                      onClick={() => {
+                        clearLocationError();
+                        handleCheckOut();
+                      }} 
+                      disabled={checkingIn || checkingOut}
                       variant="destructive"
                     >
-                      {checkingOut ? 'Checking Out...' : 'Check Out'}
+                      {checkingOut ? 'Fetching location...' : 'Check Out'}
                     </Button>
                   )}
                 </div>

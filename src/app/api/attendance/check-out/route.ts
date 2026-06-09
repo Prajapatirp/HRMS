@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/models/Attendance';
 import { requireAuth, AuthenticatedRequest } from '@/middleware/auth';
+import { parseLocationPayload } from '@/lib/attendanceValidation';
 
 async function checkOut(req: AuthenticatedRequest) {
   try {
@@ -15,7 +16,17 @@ async function checkOut(req: AuthenticatedRequest) {
       );
     }
     
-    const { employeeId, notes } = await req.json();
+    const body = await req.json();
+    const { employeeId, notes } = body;
+
+    const locationResult = parseLocationPayload(body);
+    if (!locationResult.valid) {
+      return NextResponse.json(
+        { error: locationResult.error },
+        { status: 400 }
+      );
+    }
+    const { location } = locationResult;
     
     // For admin users, allow specifying employeeId, otherwise use their own
     const targetEmployeeId = (user.role === 'admin' && employeeId) ? employeeId : user.employeeId;
@@ -58,6 +69,9 @@ async function checkOut(req: AuthenticatedRequest) {
     const diffHours = diffMs / (1000 * 60 * 60);
     
     attendance.checkOut = checkOutTime;
+    attendance.checkOutLatitude = location.latitude;
+    attendance.checkOutLongitude = location.longitude;
+    attendance.checkOutAccuracy = location.accuracy;
     attendance.totalHours = Math.round(diffHours * 100) / 100;
     
     // Mark as half-day if working hours are less than 5 hours
@@ -82,6 +96,11 @@ async function checkOut(req: AuthenticatedRequest) {
       checkOutTime,
       totalHours: attendance.totalHours,
       overtimeHours: attendance.overtimeHours,
+      location: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: location.accuracy,
+      },
     });
 
   } catch (error) {

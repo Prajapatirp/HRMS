@@ -5,6 +5,12 @@ export interface IAttendance extends Document {
   date: Date;
   checkIn?: Date;
   checkOut?: Date;
+  checkInLatitude?: number;
+  checkInLongitude?: number;
+  checkInAccuracy?: number;
+  checkOutLatitude?: number;
+  checkOutLongitude?: number;
+  checkOutAccuracy?: number;
   totalHours?: number;
   overtimeHours?: number;
   status: 'present' | 'absent' | 'late' | 'half-day' | 'holiday';
@@ -30,6 +36,24 @@ const AttendanceSchema: Schema = new Schema({
   },
   checkOut: {
     type: Date,
+  },
+  checkInLatitude: {
+    type: Number,
+  },
+  checkInLongitude: {
+    type: Number,
+  },
+  checkInAccuracy: {
+    type: Number,
+  },
+  checkOutLatitude: {
+    type: Number,
+  },
+  checkOutLongitude: {
+    type: Number,
+  },
+  checkOutAccuracy: {
+    type: Number,
   },
   totalHours: {
     type: Number,
