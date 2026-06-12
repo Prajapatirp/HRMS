@@ -13,6 +13,10 @@ import DynamicTable, { Column, PaginationInfo } from '@/components/ui/dynamic-ta
 import { formatDate } from '@/lib/utils';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import DynamicModal from '@/components/ui/dynamic-modal';
+import ConfirmModal from '@/components/ui/confirm-modal';
+import { useToast } from '@/contexts/ToastContext';
+
+type ConfirmAction = 'reopen' | 'delete';
 
 interface Ticket {
   _id: string;
@@ -36,6 +40,7 @@ interface Ticket {
 
 export default function AdminTicketsPage() {
   const { user, token } = useAuth();
+  const { showToast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -64,6 +69,10 @@ export default function AdminTicketsPage() {
     note: '',
   });
   const [updating, setUpdating] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [confirmTicket, setConfirmTicket] = useState<Ticket | null>(null);
+  const [confirmTicketId, setConfirmTicketId] = useState<string | null>(null);
 
   const fetchTickets = useCallback(async (page = 1) => {
     try {
@@ -146,9 +155,39 @@ export default function AdminTicketsPage() {
     return count;
   };
 
+  const closeConfirmModal = () => {
+    setConfirmModalOpen(false);
+    setConfirmAction(null);
+    setConfirmTicket(null);
+    setConfirmTicketId(null);
+  };
+
+  const openReopenConfirm = (ticket: Ticket) => {
+    setConfirmTicket(ticket);
+    setConfirmTicketId(ticket.ticketId);
+    setConfirmAction('reopen');
+    setConfirmModalOpen(true);
+  };
+
+  const openDeleteConfirm = (ticket: Ticket) => {
+    setConfirmTicket(ticket);
+    setConfirmTicketId(ticket.ticketId);
+    setConfirmAction('delete');
+    setConfirmModalOpen(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (confirmAction === 'reopen' && confirmTicket) {
+      await executeReopenTicket(confirmTicket);
+    } else if (confirmAction === 'delete' && confirmTicketId) {
+      await executeDeleteTicket(confirmTicketId);
+    }
+    closeConfirmModal();
+  };
+
   const handleStatusUpdate = async () => {
     if (!selectedTicket || !statusUpdate.status) {
-      alert('Please select a status');
+      showToast('Please select a status', 'error');
       return;
     }
 
@@ -168,23 +207,23 @@ export default function AdminTicketsPage() {
 
       if (response.ok) {
         setStatusUpdate({ status: '', note: '' });
+        setEditModalOpen(false);
+        setSelectedTicket(null);
         fetchTickets(pagination.page);
-        alert('Ticket status updated successfully!');
+        showToast('Ticket status updated successfully!', 'success');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to update ticket status');
+        showToast(data.error || 'Failed to update ticket status', 'error');
       }
     } catch (error) {
       console.error('Failed to update ticket status:', error);
-      alert('Failed to update ticket status. Please try again.');
+      showToast('Failed to update ticket status. Please try again.', 'error');
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleReopenTicket = async (ticket: Ticket) => {
-    if (!confirm('Are you sure you want to reopen the ticket?')) return;
-
+  const executeReopenTicket = async (ticket: Ticket) => {
     setUpdating(true);
     try {
       const response = await fetch(`/api/tickets/${ticket.ticketId}`, {
@@ -201,22 +240,21 @@ export default function AdminTicketsPage() {
 
       if (response.ok) {
         fetchTickets(pagination.page);
-        alert('Ticket reopened successfully!');
+        showToast('Ticket reopened successfully!', 'success');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to reopen ticket');
+        showToast(data.error || 'Failed to reopen ticket', 'error');
       }
     } catch (error) {
       console.error('Failed to reopen ticket:', error);
-      alert('Failed to reopen ticket. Please try again.');
+      showToast('Failed to reopen ticket. Please try again.', 'error');
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleDeleteTicket = async (ticketId: string) => {
-    if (!confirm('Are you sure you want to delete this ticket?')) return;
-
+  const executeDeleteTicket = async (ticketId: string) => {
+    setUpdating(true);
     try {
       const response = await fetch(`/api/tickets/${ticketId}`, {
         method: 'DELETE',
@@ -227,14 +265,16 @@ export default function AdminTicketsPage() {
 
       if (response.ok) {
         fetchTickets(pagination.page);
-        alert('Ticket deleted successfully');
+        showToast('Ticket deleted successfully', 'success');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to delete ticket');
+        showToast(data.error || 'Failed to delete ticket', 'error');
       }
     } catch (error) {
       console.error('Failed to delete ticket:', error);
-      alert('Failed to delete ticket. Please try again.');
+      showToast('Failed to delete ticket. Please try again.', 'error');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -379,7 +419,7 @@ export default function AdminTicketsPage() {
           )}
           {record.status === 'Closed' && (
             <button
-              onClick={() => handleReopenTicket(record)}
+              onClick={() => openReopenConfirm(record)}
               className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
               title="Reopen Ticket"
             >
@@ -395,7 +435,7 @@ export default function AdminTicketsPage() {
             </button>
           )}
           <button
-            onClick={() => handleDeleteTicket(record.ticketId)}
+            onClick={() => openDeleteConfirm(record)}
             className="relative group w-8 h-8 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
             title="Delete Ticket"
           >
@@ -743,6 +783,41 @@ export default function AdminTicketsPage() {
             </div>
           )}
         </DynamicModal>
+
+        {/* Confirm Action Modal */}
+        <ConfirmModal
+          isOpen={confirmModalOpen}
+          onClose={closeConfirmModal}
+          onConfirm={handleConfirmAction}
+          loading={updating}
+          confirmLabel={
+            confirmAction === 'delete' ? 'Yes, Delete Ticket' : 'Yes, Reopen Ticket'
+          }
+          confirmVariant={confirmAction === 'delete' ? 'danger' : 'primary'}
+        >
+          {confirmAction === 'delete' ? (
+            <>
+              <p className="text-gray-900 text-base leading-relaxed">
+                Are you sure you want to delete ticket{' '}
+                <span className="font-bold">{confirmTicket?.ticketId}</span>?
+              </p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                This action cannot be undone.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-900 text-base leading-relaxed">
+                Are you sure you want to reopen ticket{' '}
+                <span className="font-bold">{confirmTicket?.ticketId}</span>?
+              </p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                The ticket status will be changed back to{' '}
+                <span className="font-semibold text-green-600">Open</span>,
+              </p>
+            </>
+          )}
+        </ConfirmModal>
       </div>
     </Layout>
   );

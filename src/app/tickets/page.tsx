@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/utils';
 import FilterDrawer from '@/components/ui/filter-drawer';
 import DynamicModal from '@/components/ui/dynamic-modal';
 import RichTextEditor from '@/components/ui/rich-text-editor';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Ticket {
   _id: string;
@@ -38,6 +39,7 @@ interface Ticket {
 
 export default function TicketsPage() {
   const { user, token } = useAuth();
+  const { showToast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -155,7 +157,7 @@ export default function TicketsPage() {
 
   const handleCreateTicket = async () => {
     if (!formData.ticketType || !formData.subject || !formData.description || !formData.priority) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
 
@@ -180,14 +182,14 @@ export default function TicketsPage() {
           date: '',
         });
         fetchTickets(1);
-        alert('Ticket created successfully!');
+        showToast('Ticket created successfully!', 'success');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to create ticket');
+        showToast(data.error || 'Failed to create ticket', 'error');
       }
     } catch (error) {
       console.error('Failed to create ticket:', error);
-      alert('Failed to create ticket. Please try again.');
+      showToast('Failed to create ticket. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }

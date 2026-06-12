@@ -5,12 +5,13 @@ import Employee from '@/models/Employee';
 import { requireAuth } from '@/middleware/auth';
 import { sendTicketUpdateEmailToEmployee } from '@/lib/email';
 
-async function getTicket(req: NextRequest, { params }: { params: { id: string } }) {
+async function getTicket(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     
     const { user } = (req as any);
-    const ticket = await Ticket.findOne({ ticketId: params.id });
+    const { id } = await params;
+    const ticket = await Ticket.findOne({ ticketId: id });
 
     if (!ticket) {
       return NextResponse.json(
@@ -38,14 +39,15 @@ async function getTicket(req: NextRequest, { params }: { params: { id: string } 
   }
 }
 
-async function updateTicket(req: NextRequest, { params }: { params: { id: string } }) {
+async function updateTicket(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     
     const { user } = (req as any);
     const updateData = await req.json();
+    const { id } = await params;
 
-    const ticket = await Ticket.findOne({ ticketId: params.id });
+    const ticket = await Ticket.findOne({ ticketId: id });
 
     if (!ticket) {
       return NextResponse.json(
@@ -142,13 +144,14 @@ async function updateTicket(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-async function deleteTicket(req: NextRequest, { params }: { params: { id: string } }) {
+async function deleteTicket(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     
     const { user } = (req as any);
+    const { id } = await params;
 
-    const ticket = await Ticket.findOne({ ticketId: params.id });
+    const ticket = await Ticket.findOne({ ticketId: id });
 
     if (!ticket) {
       return NextResponse.json(
@@ -173,7 +176,7 @@ async function deleteTicket(req: NextRequest, { params }: { params: { id: string
       }
     }
 
-    await Ticket.deleteOne({ ticketId: params.id });
+    await Ticket.deleteOne({ ticketId: id });
 
     return NextResponse.json({
       message: 'Ticket deleted successfully',

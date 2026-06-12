@@ -19,6 +19,7 @@ import {
   Clock,
   X,
   Ticket,
+  CalendarDays,
 } from 'lucide-react';
 
 const getNavigation = (userRole: string) => {
@@ -29,6 +30,7 @@ const getNavigation = (userRole: string) => {
         { name: 'Attendance', href: '/admin/attendance', icon: Calendar },
         { name: 'Timesheets', href: '/admin/timesheets', icon: Clock },
         { name: 'Tickets', href: '/admin/tickets', icon: Ticket },
+        { name: 'Holidays', href: '/admin/holidays', icon: CalendarDays },
         { name: 'Projects', href: '/admin/projects', icon: FileText },
         { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
         { name: 'Performance', href: '/performance', icon: TrendingUp },
