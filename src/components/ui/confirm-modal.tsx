@@ -33,7 +33,7 @@ export default function ConfirmModal({
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6"
+        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-transparent dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         <button

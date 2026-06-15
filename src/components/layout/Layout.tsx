@@ -56,7 +56,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 relative">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 relative">
       {/* Mobile backdrop with blur */}
       {sidebarOpen && (
         <div

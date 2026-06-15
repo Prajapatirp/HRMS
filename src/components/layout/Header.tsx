@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Bell, Menu, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CheckInOutModal from '@/components/attendance/CheckInOutModal';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 import { useAttendanceCheckInOut } from '@/hooks/useAttendanceCheckInOut';
 
 interface HeaderProps {
@@ -108,7 +109,7 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
 
   return (
     <>
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
           <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Mobile menu button */}
@@ -168,7 +169,9 @@ export default function Header({ onMenuClick, onToggleSidebar, sidebarCollapsed 
               </Button>
             )}
             
-            <Button variant="outline" size="icon" className="relative bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md">
+            <ThemeToggle />
+
+            <Button variant="outline" size="icon" className="relative bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700">
               <Bell className="h-5 w-5 text-blue-600" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
             </Button>

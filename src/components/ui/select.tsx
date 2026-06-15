@@ -100,17 +100,17 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((o) => !o)}
           className={cn(
-            'flex h-10 w-full items-center justify-between rounded-lg border-2 bg-white px-3 py-2 text-left text-sm font-medium text-gray-900',
+            'flex h-10 w-full items-center justify-between rounded-lg border-2 bg-white dark:bg-gray-800 px-3 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100',
             'focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            isOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-300 hover:border-gray-400',
+            isOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500',
             className
           )}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           aria-label={typeof displayLabel === 'string' ? displayLabel : 'Select option'}
         >
-          <span className={displayLabel ? 'text-gray-900' : 'text-gray-500'}>
+          <span className={displayLabel ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
             {displayLabel ?? 'Select...'}
           </span>
           <ChevronDown
@@ -120,7 +120,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
         {isOpen && (
           <ul
-            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-1 shadow-lg"
             role="listbox"
           >
             {options.map((opt) => {
@@ -135,7 +135,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                       'w-full px-3 py-2.5 text-left text-sm font-medium transition-colors',
                       isSelected
                         ? 'bg-blue-600 text-white'
-                        : 'text-gray-900 hover:bg-blue-600 hover:text-white',
+                        : 'text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white',
                       opt.disabled && 'cursor-not-allowed opacity-50'
                     )}
                   >

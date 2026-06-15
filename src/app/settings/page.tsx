@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Settings, User, Bell, Shield, Save } from 'lucide-react';
+import { Settings, User, Bell, Shield, Save, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function SettingsPage() {
   const { user, token } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     email: '',
@@ -222,6 +224,41 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           {/* <p className="text-gray-600">Manage your account settings and preferences</p> */}
         </div>
+
+        {/* Appearance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Moon className="h-5 w-5" />
+              <span>Appearance</span>
+            </CardTitle>
+            <CardDescription>
+              Choose light or dark mode for the application interface
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                variant={theme === 'light' ? 'default' : 'outline'}
+                onClick={() => setTheme('light')}
+                className="flex items-center gap-2"
+              >
+                <Sun className="h-4 w-4" />
+                Light
+              </Button>
+              <Button
+                type="button"
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                onClick={() => setTheme('dark')}
+                className="flex items-center gap-2"
+              >
+                <Moon className="h-4 w-4" />
+                Dark
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Profile Settings */}
         <Card>

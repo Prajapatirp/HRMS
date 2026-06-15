@@ -33,7 +33,7 @@ interface TableCellProps {
 
 export function Table({ children, className = '' }: TableProps) {
   return (
-    <table className={`min-w-full divide-y divide-gray-200 ${className}`}>
+    <table className={`min-w-full divide-y divide-gray-200 dark:divide-gray-700 ${className}`}>
       {children}
     </table>
   );
@@ -41,7 +41,7 @@ export function Table({ children, className = '' }: TableProps) {
 
 export function TableHeader({ children, className = '' }: TableHeaderProps) {
   return (
-    <thead className={`bg-gray-50 ${className}`}>
+    <thead className={`bg-gray-50 dark:bg-gray-800 ${className}`}>
       {children}
     </thead>
   );
@@ -49,7 +49,7 @@ export function TableHeader({ children, className = '' }: TableHeaderProps) {
 
 export function TableBody({ children, className = '' }: TableBodyProps) {
   return (
-    <tbody className={`bg-white divide-y divide-gray-200 ${className}`}>
+    <tbody className={`bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 ${className}`}>
       {children}
     </tbody>
   );
@@ -58,7 +58,7 @@ export function TableBody({ children, className = '' }: TableBodyProps) {
 export function TableRow({ children, className = '', onClick }: TableRowProps) {
   return (
     <tr 
-      className={`${onClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${className}`}
+      className={`${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -68,7 +68,7 @@ export function TableRow({ children, className = '', onClick }: TableRowProps) {
 
 export function TableHead({ children, className = '' }: TableHeadProps) {
   return (
-    <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}>
+    <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${className}`}>
       {children}
     </th>
   );
@@ -76,7 +76,7 @@ export function TableHead({ children, className = '' }: TableHeadProps) {
 
 export function TableCell({ children, className = '' }: TableCellProps) {
   return (
-    <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${className}`}>
+    <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${className}`}>
       {children}
     </td>
   );

@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f9fafb;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+}
+
+.dark {
+  --background: #111827;
+  --foreground: #f3f4f6;
+  --surface: #1f2937;
+  --border: #374151;
+  --muted: #9ca3af;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -11,24 +25,48 @@
   --font-sans: system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: system-ui, sans-serif;
 }
 
+/* Common light-theme utilities → dark equivalents */
+.dark .text-gray-900 { color: #f3f4f6; }
+.dark .text-gray-800 { color: #e5e7eb; }
+.dark .text-gray-700 { color: #d1d5db; }
+.dark .text-gray-600 { color: #9ca3af; }
+.dark .text-gray-500 { color: #9ca3af; }
+
+.dark .bg-white { background-color: #1f2937; }
+.dark .bg-gray-50 { background-color: #111827; }
+.dark .bg-gray-100 { background-color: #374151; }
+
+.dark .border-gray-100 { border-color: #374151; }
+.dark .border-gray-200 { border-color: #374151; }
+.dark .border-gray-300 { border-color: #4b5563; }
+
+.dark .hover\:bg-gray-50:hover { background-color: #374151; }
+.dark .hover\:bg-gray-100:hover { background-color: #4b5563; }
+
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+.dark .shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3); }
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4); }
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4); }
+.dark .shadow-xl { box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4); }
+
 /* Rich Text Editor Content Styling */
 .rich-text-content strong,
 .rich-text-content b {
   font-weight: 600;
   color: #111827;
+}
+
+.dark .rich-text-content strong,
+.dark .rich-text-content b {
+  color: #f3f4f6;
 }
 
 .rich-text-content em,
@@ -76,6 +114,11 @@ body {
   color: #111827 !important;
 }
 
+.dark .ticket-description-view strong,
+.dark .ticket-description-view b {
+  color: #f3f4f6 !important;
+}
+
 .ticket-description-view em,
 .ticket-description-view i {
   font-style: italic !important;
@@ -112,4 +155,8 @@ body {
 
 .ticket-description-view p:last-child {
   margin-bottom: 0 !important;
+}
+
+.dark .ticket-description-view {
+  color: #d1d5db !important;
 }

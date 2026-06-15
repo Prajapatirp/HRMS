@@ -20,16 +20,16 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const variantStyles: Record<ToastVariant, { container: string; icon: React.ReactNode }> = {
   success: {
-    container: 'border-green-200 bg-green-50 text-green-900',
-    icon: <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />,
+    container: 'border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100',
+    icon: <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />,
   },
   error: {
-    container: 'border-red-200 bg-red-50 text-red-900',
-    icon: <XCircle className="h-5 w-5 text-red-600 shrink-0" />,
+    container: 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100',
+    icon: <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />,
   },
   info: {
-    container: 'border-blue-200 bg-blue-50 text-blue-900',
-    icon: <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />,
+    container: 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100',
+    icon: <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />,
   },
 };
 

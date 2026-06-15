@@ -6,6 +6,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 const validationSchema = Yup.object({
   email: Yup.string()
@@ -56,13 +57,16 @@ export default function LoginForm() {
       </div>
 
       {/* Left — Sign in form */}
-      <div className="flex-1 flex items-center justify-center bg-white px-6 py-10 sm:px-10 lg:px-16">
+      <div className="relative flex-1 flex items-center justify-center bg-white dark:bg-gray-950 px-6 py-10 sm:px-10 lg:px-16">
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md">
           <div className="mb-10">
             <p className="text-2xl font-bold text-blue-600 tracking-tight">HRMS</p>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-8">Sign in</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-8">Sign in</h1>
 
           <form onSubmit={formik.handleSubmit} className="space-y-5">
             {error && (
@@ -72,7 +76,7 @@ export default function LoginForm() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
               </label>
               <div className="relative">
@@ -85,10 +89,10 @@ export default function LoginForm() {
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className={`w-full h-12 rounded-xl border bg-white pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                  className={`w-full h-12 rounded-xl border bg-white dark:bg-gray-900 pl-11 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
                     formik.touched.email && formik.errors.email
                       ? 'border-red-500'
-                      : 'border-gray-200'
+                      : 'border-gray-200 dark:border-gray-700'
                   }`}
                 />
               </div>
@@ -98,7 +102,7 @@ export default function LoginForm() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -111,10 +115,10 @@ export default function LoginForm() {
                   value={formik.values.password}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className={`w-full h-12 rounded-xl border bg-white pl-11 pr-11 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                  className={`w-full h-12 rounded-xl border bg-white dark:bg-gray-900 pl-11 pr-11 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
                     formik.touched.password && formik.errors.password
                       ? 'border-red-500'
-                      : 'border-gray-200'
+                      : 'border-gray-200 dark:border-gray-700'
                   }`}
                 />
                 <button
@@ -138,7 +142,7 @@ export default function LoginForm() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-600">Remember me</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Remember me</span>
             </label>
 
             <button
@@ -154,7 +158,7 @@ export default function LoginForm() {
             <button
               type="button"
               onClick={() => router.push('/forgot-password')}
-              className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors"
             >
               Forgot Password
             </button>
