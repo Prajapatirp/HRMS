@@ -11,7 +11,6 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
-  Bell,
   BarChart3,
   Home,
   Settings,
@@ -34,7 +33,6 @@ const getNavigation = (userRole: string) => {
         { name: 'Projects', href: '/admin/projects', icon: FileText },
         { name: 'Payroll', href: '/admin/payroll', icon: DollarSign },
         { name: 'Performance', href: '/performance', icon: TrendingUp },
-        { name: 'Notifications', href: '/notifications', icon: Bell },
         { name: 'Settings', href: '/settings', icon: Settings },
       ];
 
@@ -52,7 +50,6 @@ const getNavigation = (userRole: string) => {
     { name: 'Tickets', href: '/tickets', icon: Ticket },
     { name: 'Payroll', href: '/payroll', icon: DollarSign },
     { name: 'Performance', href: '/performance', icon: TrendingUp },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
