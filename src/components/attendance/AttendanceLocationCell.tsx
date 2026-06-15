@@ -1,21 +1,12 @@
 'use client';
 
 import React from 'react';
+import { hasValidCoordinates } from '@/lib/attendanceLocation';
 
 interface AttendanceLocationCellProps {
   latitude?: number | null;
   longitude?: number | null;
   className?: string;
-}
-
-function hasValidCoordinates(
-  latitude?: number | null,
-  longitude?: number | null
-): boolean {
-  if (latitude == null || longitude == null) return false;
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  return !Number.isNaN(lat) && !Number.isNaN(lng);
 }
 
 export default function AttendanceLocationCell({
@@ -36,12 +27,4 @@ export default function AttendanceLocationCell({
       <div>{lng}</div>
     </div>
   );
-}
-
-export function formatAttendanceLocationText(
-  latitude?: number | null,
-  longitude?: number | null
-): string {
-  if (!hasValidCoordinates(latitude, longitude)) return '-';
-  return `${Number(latitude)} -\n${Number(longitude)}`;
 }

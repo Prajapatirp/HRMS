@@ -212,7 +212,7 @@ export default function AdminAttendancePage() {
   });
   const [filters, setFilters] = useState({
     employeeId: '',
-    month: '',
+    month: (new Date().getMonth() + 1).toString(),
     year: new Date().getFullYear().toString(),
     status: '',
     limit: '10'
@@ -226,21 +226,14 @@ export default function AdminAttendancePage() {
       
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
       
-      // If no month filter, default to current month
-      if (!filters.month) {
-        const now = new Date();
-        const currentMonth = now.getMonth() + 1;
-        const currentYear = now.getFullYear();
-        queryParams.append('month', currentMonth.toString());
-        queryParams.append('year', currentYear.toString());
-      } else {
-        if (filters.month) queryParams.append('month', filters.month);
-        if (filters.year) queryParams.append('year', filters.year);
+      if (filters.month) {
+        queryParams.append('month', filters.month);
+        queryParams.append('year', filters.year || new Date().getFullYear().toString());
       }
       
       // Don't filter by status for statistics - we want all statuses
 
-      const response = await fetch(`/api/attendance?${queryParams}`, {
+      const response = await fetch(`/api/attendance/admin?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -269,21 +262,14 @@ export default function AdminAttendancePage() {
       queryParams.append('limit', filters.limit);
       if (filters.employeeId) queryParams.append('employeeId', filters.employeeId);
       
-      // If no month filter, default to current month
-      if (!filters.month) {
-        const now = new Date();
-        const currentMonth = now.getMonth() + 1;
-        const currentYear = now.getFullYear();
-        queryParams.append('month', currentMonth.toString());
-        queryParams.append('year', currentYear.toString());
-      } else {
-        if (filters.month) queryParams.append('month', filters.month);
-        if (filters.year) queryParams.append('year', filters.year);
+      if (filters.month) {
+        queryParams.append('month', filters.month);
+        queryParams.append('year', filters.year || new Date().getFullYear().toString());
       }
       
       if (filters.status) queryParams.append('status', filters.status);
 
-      const response = await fetch(`/api/attendance?${queryParams}`, {
+      const response = await fetch(`/api/attendance/admin?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -375,7 +361,7 @@ export default function AdminAttendancePage() {
         queryParams.append('employeeId', selectedEmployeeId);
       }
 
-      const response = await fetch(`/api/attendance?${queryParams}`, {
+      const response = await fetch(`/api/attendance/admin?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -424,7 +410,7 @@ export default function AdminAttendancePage() {
   const clearFilters = () => {
     setFilters({
       employeeId: '',
-      month: '',
+      month: (new Date().getMonth() + 1).toString(),
       year: new Date().getFullYear().toString(),
       status: '',
       limit: '10'

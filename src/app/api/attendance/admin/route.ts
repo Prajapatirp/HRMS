@@ -52,7 +52,6 @@ async function getAdminAttendance(req: NextRequest) {
 
     // Get attendance records with pagination
     const attendance = await Attendance.find(query)
-      .populate('employeeId', 'firstName lastName email')
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit);

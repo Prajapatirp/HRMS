@@ -118,26 +118,37 @@ async function createEmployee(req: NextRequest) {
 
     await employee.save();
 
-    // Create a user account for the employee
-    const hashedPassword: string = await hashPassword('password123'); // Default password
-    const user = new User({
-      email: employeeData.personalInfo.email,
-      password: hashedPassword,
-      role: 'employee',
-      employeeId: employeeId,
-      isActive: true,
-    });
+    // Link or create user account for the employee
+    const employeeEmail = employeeData.personalInfo?.email?.toLowerCase()?.trim();
+    const hashedPassword: string = await hashPassword('password123');
+    let user = employeeEmail ? await User.findOne({ email: employeeEmail }) : null;
 
-    await user.save();
+    if (user) {
+      user.employeeId = employeeId;
+      user.role = user.role || 'employee';
+      user.isActive = true;
+      await user.save();
+    } else if (employeeEmail) {
+      user = new User({
+        email: employeeEmail,
+        password: hashedPassword,
+        role: 'employee',
+        employeeId,
+        isActive: true,
+      });
+      await user.save();
+    }
 
     return NextResponse.json({
       message: 'Employee created successfully',
       employee,
-      user: {
-        email: user.email,
-        role: user.role,
-        employeeId: user.employeeId,
-      },
+      user: user
+        ? {
+            email: user.email,
+            role: user.role,
+            employeeId: user.employeeId,
+          }
+        : null,
     }, { status: 201 });
 
   } catch (error) {

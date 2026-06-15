@@ -28,19 +28,14 @@ async function getAttendance(req: NextRequest) {
     const query: any = {};
     
     // Handle employeeId filtering based on user role and request
-    if (user.role === 'admin') {
-      // Admin user logic
+    if (user.role === 'admin' || user.role === 'hr') {
       if (requestedEmployeeId) {
-        // Admin requested specific employee - show that employee's records
         query.employeeId = requestedEmployeeId;
-      } else {
-        // Admin viewing employee attendance page - exclude admin's own employeeId
+      } else if (user.role === 'admin') {
         const adminUser = await User.findById(user.userId);
-        if (adminUser && adminUser.employeeId) {
-          // Exclude admin's own employeeId from results
+        if (adminUser?.employeeId) {
           query.employeeId = { $ne: adminUser.employeeId };
         }
-        // If admin has no employeeId, show all employee records (no filter needed)
       }
     } else {
       // Non-admin users can only see their own attendance
